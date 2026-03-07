@@ -1,4 +1,5 @@
 // cards.js
+//サポカは付け足しあり
 
 const cards = {
 
