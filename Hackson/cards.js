@@ -201,168 +201,168 @@ const cards = {
     {
       name: "Z-Force 90",
       cost: 80,
-      score: 11000,
+      score: 9000,
       power: 450,
       reliability: "new"
     },
     {
       name: "Radion 900",
       cost: 70,
-      score: 9500,
+      score: 8500,
       power: 350,
       reliability: "new"
     },
     {
       name: "Z-Force 70",
       cost: 50,
-      score: 7000,
+      score: 6000,
       power: 250,
       reliability: "new"
     },
     {
       name: "Radion 700",
       cost: 45,
-      score: 6500,
+      score: 5500,
       power: 220,
       reliability: "new"
     },
     {
       name: "Z-Force 60",
       cost: 35,
-      score: 4500,
+      score: 3500,
       power: 150,
       reliability: "new"
     },
     {
       name: "Radion 600",
       cost: 30,
-      score: 4000,
+      score: 3000,
       power: 130,
       reliability: "new"
     },
     {
       name: "Z-Force 50",
       cost: 10,
-      score: 1500,
+      score: 2000,
       power: 75,
       reliability: "new"
     },
     {
       name: "Radion 500",
       cost: 10,
-      score: 1500,
+      score: 2000,
       power: 50,
       reliability: "new"
     },
     {
       name: "Z-Force 90",
       cost: 56,
-      score: 11000,
+      score: 9000,
       power: 450,
       reliability: "used"
     },
     {
       name: "Radion 900",
       cost: 49,
-      score: 9500,
+      score: 8500,
       power: 350,
       reliability: "used"
     },
     {
       name: "Z-Force 70",
       cost: 35,
-      score: 7000,
+      score: 6000,
       power: 250,
       reliability: "used"
     },
     {
       name: "Radion 700",
       cost: 32,
-      score: 6500,
+      score: 5500,
       power: 220,
       reliability: "used"
     },
     {
       name: "Z-Force 60",
       cost: 25,
-      score: 4500,
+      score: 3500,
       power: 150,
       reliability: "used"
     },
     {
       name: "Radion 600",
       cost: 21,
-      score: 4000,
+      score: 3000,
       power: 130,
       reliability: "used"
     },
     {
       name: "Z-Force 50",
       cost: 7,
-      score: 1500,
+      score: 2000,
       power: 75,
       reliability: "used"
     },
     {
       name: "Radion 500",
       cost: 7,
-      score: 1500,
+      score: 2000,
       power: 50,
       reliability: "used"
     },
     {
       name: "Z-Force 90",
       cost: 24,
-      score: 11000,
+      score: 9000,
       power: 450,
       reliability: "junk"
     },
     {
       name: "Radion 900",
       cost: 21,
-      score: 9500,
+      score: 8500,
       power: 350,
       reliability: "junk"
     },
     {
       name: "Z-Force 70",
       cost: 15,
-      score: 7000,
+      score: 6000,
       power: 250,
       reliability: "junk"
     },
     {
       name: "Radion 700",
       cost: 14,
-      score: 6500,
+      score: 5500,
       power: 220,
       reliability: "junk"
     },
     {
       name: "Z-Force 60",
       cost: 11,
-      score: 4500,
+      score: 3500,
       power: 150,
       reliability: "junk"
     },
     {
       name: "Radion 600",
       cost: 9,
-      score: 4000,
+      score: 3000,
       power: 130,
       reliability: "junk"
     },
     {
       name: "Z-Force 50",
       cost: 3,
-      score: 1500,
+      score: 2000,
       power: 75,
       reliability: "junk"
     },
     {
       name: "Radion 500",
       cost: 3,
-      score: 1500,
+      score: 2000,
       power: 50,
       reliability: "junk"
     }
