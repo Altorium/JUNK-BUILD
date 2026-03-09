@@ -1,5 +1,5 @@
 // game.js
-const { cards } = require("./cards.js")
+//const { cards } = require("./cards.js") //〈修正必要〉requireはNode.jsのモジュールだから今回は使えない
 
 // =====================
 // プレイヤー
@@ -140,7 +140,7 @@ function draft(players, deck) {
 
   let field = createField(deck)
 
-  let order = [0,1,2,3]
+  let order = [0,1,2,3] //これだと2.3人の時に対応できない
 
   while (players[0].hand.length < 8) {
 
@@ -152,7 +152,7 @@ function draft(players, deck) {
 
       if (available.length === 0) continue
 
-      const pick = available[0]
+      const pick = available[0] //いったん仮置き、UIのjsで選択できるようにする
 
       player.hand.push(pick)
 
@@ -253,7 +253,7 @@ function synergyBonus(score, build){
 
   let multiplier = 1
 
-  if (build.cpu.brand === "AMD" && build.gpu.brand === "AMD"){
+  if (build.cpu.brand === "AMD" && build.gpu.brand === "AMD"){ //〈修正必要〉brandというプロパティがcards.jsに存在しないためこのボーナスの関数が機能しない
     multiplier += 0.1
   }
 
@@ -334,7 +334,7 @@ function autoBuild(hand) {
 // ゲーム
 // =====================
 
-function playGame() {
+function initGame() {
 
   const players = [
 
@@ -397,5 +397,6 @@ function playGame() {
   })
 
 }
+
 
 playGame()
