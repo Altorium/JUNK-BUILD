@@ -337,52 +337,82 @@ function pickCard(index) {
 }
 
 // =====================
-// 互換チェック
+// 互換チェック 
 // =====================
 
 /**
  * PC構成の互換性をチェックする
  * @param {Build} build - 組み立てたPC構成
+ * @param {string} playerName - プレイヤー名（ログ出力用）
  * @returns {boolean} 互換性があればtrue
  */
-function checkCompatibility(build) {
-  if (build.cpu.socket !== build.motherboard.socket) return false
-  if (build.memory.memoryType !== build.motherboard.memoryType) return false
+function checkCompatibility(build, playerName) {
+  // ① CPUソケットのチェック
+  if (build.cpu.socket !== build.motherboard.socket) {
+    console.log(`❌ [${playerName}] 互換性エラー: CPUソケット不一致`)
+    console.log(`   ├─ CPU: ${build.cpu.socket} (${typeof build.cpu.socket})`)
+    console.log(`   └─ M/B: ${build.motherboard.socket} (${typeof build.motherboard.socket})`)
+    return false
+  }
 
-  const power = build.cpu.power + build.gpu.power
-  if (power > build.psu.capacity) return false
+  // ② メモリ規格のチェック
+  if (build.memory.memoryType !== build.motherboard.memoryType) {
+    console.log(`❌[${playerName}] 互換性エラー: メモリ規格不一致`)
+    console.log(`   ├─ Memory: ${build.memory.memoryType} (${typeof build.memory.memoryType})`)
+    console.log(`   └─ M/B   : ${build.motherboard.memoryType} (${typeof build.motherboard.memoryType})`)
+    return false
+  }
+
+  // ③ 電力チェック
+  // ※念のためNumber()で数値化して計算します
+  const power = Number(build.cpu.power) + Number(build.gpu.power)
+  const capacity = Number(build.psu.capacity)
+  
+  if (power > capacity) {
+    console.log(`❌ [${playerName}] 互換性エラー: 電力不足`)
+    console.log(`   ├─ 必要電力: ${power}W (CPU: ${build.cpu.power}W + GPU: ${build.gpu.power}W)`)
+    console.log(`   └─ 電源容量: ${capacity}W`)
+    return false
+  }
 
   return true
 }
 
 // =====================
-// 信頼度
+// 信頼度 
 // =====================
 
 /**
  * 構成パーツが故障しないかチェックする
  * @param {Build} build - 組み立てたPC構成
+ * @param {string} playerName - プレイヤー名（ログ出力用）
  * @returns {boolean} 故障しなければtrue（成功）
  */
-function reliabilityCheck(build) {
+function reliabilityCheck(build, playerName) {
   const rates = {
-    new: 1,
-    used: 0.8,
-    junk: 0.5
+    new: 1,      // 100%成功
+    used: 0.8,   // 80%成功
+    junk: 0.5    // 50%成功
   }
 
+  // どのパーツが壊れたか分かるようにラベルを付ける
   const parts =[
-    build.cpu,
-    build.gpu,
-    build.memory,
-    build.motherboard,
-    build.psu // 先ほどの修正を反映
+    { label: "CPU", data: build.cpu },
+    { label: "GPU", data: build.gpu },
+    { label: "Memory", data: build.memory },
+    { label: "Motherboard", data: build.motherboard },
+    { label: "PSU", data: build.psu } 
   ]
 
   for (let p of parts) {
-    // 信頼度データがない場合は新品(new)扱いとする
-    const rel = p.reliability || "new"
-    if (Math.random() > rates[rel]) {
+    const rel = p.data.reliability || "new"
+    const successRate = rates[rel]
+
+    // 乱数と確率を比較
+    const roll = Math.random()
+    if (roll > successRate) {
+      console.log(`💥 [${playerName}] 起動失敗: パーツが故障しました！`)
+      console.log(`   └─ 原因パーツ: ${p.label} (状態: ${rel}, 成功率: ${successRate * 100}%)`)
       return false
     }
   }
@@ -659,5 +689,6 @@ module.exports = {
   passTurn,
   calculateResult
 }
+
 
 
