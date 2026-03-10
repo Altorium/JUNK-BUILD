@@ -34,7 +34,7 @@ function generateEvent() {
 
 }
 
-function applyEvent(event) {
+function applyEvent(event) {  //cards.jsを直接書き換えるため再プレイ不可、調整必要
 
   if (event === "gpu_up") {
     cards.gpu.forEach(c => c.cost += 5)
@@ -400,3 +400,4 @@ function initGame() {
 
 
 playGame()
+
