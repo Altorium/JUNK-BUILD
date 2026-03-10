@@ -1,0 +1,645 @@
+/* =====================
+   CSS変数（テーマ設定）
+   ここを変えるだけで全体の色が変わる
+   ===================== */
+:root {
+  --bg-primary:    #0a0f0a;
+  --bg-secondary:  #111a11;
+  --bg-card:       #152015;
+  --bg-card-hover: #1e2e1e;
+
+  --accent:        #00e676;
+  --accent-dim:    #00994d;
+  --accent-glow:   rgba(0, 230, 118, 0.25);
+
+  --text-primary:  #e8f5e9;
+  --text-secondary:#7fa07f;
+  --text-muted:    #4a604a;
+
+  --border:        #1e3a1e;
+  --border-accent: #00e676;
+
+  --danger:        #ff3d3d;
+  --warning:       #ffa726;
+  --success:       #00e676;
+
+  --font-main:     'Courier New', Courier, monospace;
+}
+
+/* =====================
+   リセット・ベース
+   ===================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* =====================
+   画面切り替え
+   ===================== */
+.screen {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =====================
+   見出し
+   ===================== */
+h1 {
+  font-size: 3rem;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 1.6rem;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border-accent);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  letter-spacing: 0.1em;
+}
+
+h3 {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+/* =====================
+   ボタン
+   ===================== */
+.btn {
+  padding: 10px 28px;
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  text-transform: uppercase;
+}
+
+.btn-primary {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.btn-primary:disabled {
+  color: var(--text-muted);
+  border-color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btn-warning {
+  background: transparent;
+  color: var(--warning);
+  border-color: var(--warning);
+}
+.btn-warning:hover {
+  background: rgba(255, 167, 38, 0.15);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--text-secondary);
+}
+.btn-secondary:hover {
+  background: rgba(127, 160, 127, 0.1);
+}
+
+/* =====================
+   カード（共通）
+   ===================== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  width: 130px;
+  min-height: 180px;
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-dim);
+}
+
+.card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* コスト（左上バッジ） */
+.card-cost {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 5px;
+  line-height: 1;
+}
+
+/* カテゴリラベル（右上） */
+.card-type {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* カード名 */
+.card-name {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-top: 24px;
+  line-height: 1.3;
+}
+
+/* ステータス */
+.card-stats {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.card-stats span {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* 信頼度バッジ */
+.card-reliability {
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border: 1px solid;
+  align-self: flex-start;
+  text-transform: uppercase;
+}
+.card-reliability.new  { color: var(--success);  border-color: var(--success); }
+.card-reliability.used { color: var(--warning);  border-color: var(--warning); }
+.card-reliability.junk { color: var(--danger);   border-color: var(--danger);  }
+
+/* =====================
+   タイトル画面
+   ===================== */
+#screen-title {
+  justify-content: center;
+  gap: 24px;
+  text-align: center;
+}
+
+#screen-title p {
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+}
+
+/* =====================
+   準備画面
+   ===================== */
+#screen-prep {
+  gap: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.budget-row .amount {
+  color: var(--accent);
+}
+
+#event-display {
+  padding: 12px 16px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-glow);
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+/* =====================
+   ドラフト画面
+   ===================== */
+#screen-draft {
+  gap: 16px;
+  align-items: stretch;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#draft-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+#draft-current-player {
+  color: var(--accent);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+}
+
+#draft-round {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+#draft-budget-amount {
+  color: var(--accent);
+}
+
+/* 場のカード */
+#field-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 手札 */
+#hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 他プレイヤー情報 */
+#other-players-info {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ドラフトアクション */
+#draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+/* =====================
+   セット画面（PC組み立て）
+   ===================== */
+#screen-set {
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#set-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+}
+
+#set-hand {
+  flex: 1;
+}
+
+#set-hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* スロット */
+#set-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  min-height: 60px;
+}
+
+.slot-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-width: 80px;
+}
+
+.slot-card {
+  flex: 1;
+  min-height: 40px;
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.slot-card.filled {
+  border-style: solid;
+  border-color: var(--accent-dim);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+#compatibility-check-result {
+  font-size: 0.85rem;
+  padding: 6px 0;
+}
+#compatibility-check-result.ok  { color: var(--success); }
+#compatibility-check-result.err { color: var(--danger);  }
+
+/* =====================
+   BIOS起動画面
+   ===================== */
+#screen-boot {
+  justify-content: center;
+  background: #000;
+}
+
+#bios-screen {
+  width: 100%;
+  max-width: 700px;
+  font-size: 0.9rem;
+  color: #00cc44;
+  line-height: 1.8;
+}
+
+#bios-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* テキストが1行ずつ現れるアニメーション用 */
+.bios-line {
+  opacity: 0;
+  animation: fadeInLine 0.05s forwards;
+}
+
+@keyframes fadeInLine {
+  to { opacity: 1; }
+}
+
+#boot-result {
+  margin-top: 32px;
+  text-align: center;
+}
+
+#boot-success p { color: var(--success); font-size: 1.2rem; margin-bottom: 16px; }
+#boot-failure p { color: var(--danger);  font-size: 1rem;  margin-bottom: 16px; }
+
+/* =====================
+   デバッグ画面
+   ===================== */
+#screen-debug {
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.warning-text {
+  color: var(--warning);
+  font-size: 0.8rem;
+}
+
+#debug-hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* =====================
+   ベンチマーク画面
+   ===================== */
+#screen-benchmark {
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#benchmark-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.benchmark-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.benchmark-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 130px;
+}
+
+.score-bar-wrap {
+  flex: 1;
+  height: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.score-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 1s ease;
+}
+
+.score-value {
+  font-size: 0.85rem;
+  color: var(--accent);
+  min-width: 60px;
+  text-align: right;
+}
+
+#benchmark-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-glow);
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+#val-total-score {
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+/* =====================
+   得点変動画面
+   ===================== */
+#screen-bonus {
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#bonus-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.bonus-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.bonus-row .bonus-val { color: var(--accent); }
+
+#bonus-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-glow);
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+#val-final-score {
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+/* =====================
+   最終結果画面
+   ===================== */
+#screen-result {
+  gap: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#result-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.rank-row.rank-1 {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.rank-num {
+  font-size: 1.2rem;
+  color: var(--accent);
+  min-width: 32px;
+}
+
+.rank-name {
+  flex: 1;
+}
+
+.rank-score {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+#result-winner {
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 16px;
+  border: 1px solid var(--border-accent);
+}
+
+#winner-name {
+  color: var(--accent);
+  font-size: 1.4rem;
+}
