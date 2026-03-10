@@ -511,8 +511,9 @@ function calculateResult() {
 
   gameState.players.forEach(player => {
 
-    console.log("====== PLAYER ======")
-    console.log("name:", player.name)
+    console.log("\n==============================")
+    console.log("PLAYER:", player.name)
+    console.log("==============================")
 
     const build = autoBuild(player.hand)
 
@@ -590,7 +591,8 @@ function calculateResult() {
     // =====================
 
     const power =
-      build.cpu.power + build.gpu.power
+      (build.cpu.power || 0) +
+      (build.gpu.power || 0)
 
     const marginRate =
       (build.psu.capacity - power) /
@@ -630,25 +632,22 @@ function calculateResult() {
 
   })
 
-  console.log("====== RESULT ======")
+  console.log("\n====== RESULT ======")
 
+  // スコアの降順（高い順）にソート
   gameState.players.sort((a, b) => b.score - a.score)
 
   gameState.players.forEach((p, i) => {
     console.log(
-      `${i+1}位`,
+      `${i + 1}位`,
       p.name,
       "score:",
       p.score
     )
   })
 
-  // スコアの降順（高い順）にソート
-  gameState.players.sort((a, b) => b.score - a.score)
-
   return gameState.players
 }
-
 // =====================
 // exports
 // =====================
@@ -660,4 +659,5 @@ module.exports = {
   passTurn,
   calculateResult
 }
+
 
