@@ -507,37 +507,140 @@ function autoBuild(hand) {
 // 結果計算
 // =====================
 
-/**
- * 全プレイヤーの構成をもとにスコア計算と順位付けを行う
- * @returns {Player[]} スコア順にソートされたプレイヤーリスト
- */
 function calculateResult() {
+
   gameState.players.forEach(player => {
+
+    console.log("====== PLAYER ======")
+    console.log("name:", player.name)
+
     const build = autoBuild(player.hand)
 
+    console.log("build:", build)
+
     if (!build.cpu || !build.gpu || !build.memory || !build.motherboard || !build.psu) {
+      console.log("Missing parts")
       player.score = 0
       return
     }
 
-    if (!checkCompatibility(build)) {
+    // =====================
+    // 互換チェック
+    // =====================
+
+    const compatibility = checkCompatibility(build)
+
+    console.log("compatibility:", compatibility)
+
+    if (!compatibility) {
       player.score = 0
       return
     }
+
+    // =====================
+    // 故障チェック
+    // =====================
 
     player.broken = !reliabilityCheck(build)
+
+    console.log("broken:", player.broken)
 
     if (player.broken) {
       player.score = 0
       return
     }
 
-    let score = benchmark(build)
+    // =====================
+    // ベンチ計算
+    // =====================
+
+    const cpu = build.cpu.score || 0
+    const gpu = build.gpu.score || 0
+
+    const baseScore = cpu + gpu
+
+    const ratio =
+      Math.min(cpu, gpu) /
+      Math.max(cpu, gpu)
+
+    const bottleneck =
+      0.5 + 0.5 * ratio
+
+    let score = baseScore * bottleneck
+
+    console.log("CPU score:", cpu)
+    console.log("GPU score:", gpu)
+    console.log("Base score:", baseScore)
+    console.log("Ratio:", ratio)
+    console.log("Bottleneck:", bottleneck)
+    console.log("After benchmark:", score)
+
+    // =====================
+    // シナジー
+    // =====================
+
+    const beforeSynergy = score
     score = synergyBonus(score, build)
+
+    console.log("Synergy before:", beforeSynergy)
+    console.log("Synergy after:", score)
+
+    // =====================
+    // 電源余裕
+    // =====================
+
+    const power =
+      build.cpu.power + build.gpu.power
+
+    const marginRate =
+      (build.psu.capacity - power) /
+      build.psu.capacity
+
+    console.log("Power usage:", power)
+    console.log("PSU capacity:", build.psu.capacity)
+    console.log("Power margin rate:", marginRate)
+
+    const beforePower = score
     score = powerBonus(score, build)
+
+    console.log("Power bonus before:", beforePower)
+    console.log("Power bonus after:", score)
+
+    // =====================
+    // その他ボーナス
+    // =====================
+
+    console.log("Memory capacity:", build.memory.capacity)
+    console.log("PSU rating:", build.psu.rating)
+
+    console.log("Hand effects:")
+    player.hand.forEach(c => {
+      if (c.effect) {
+        console.log("-", c.effect)
+      }
+    })
+
+    const beforeBonus = score
     score = bonus(score, build, player.hand)
 
+    console.log("Bonus before:", beforeBonus)
+    console.log("Final score:", score)
+
     player.score = score
+
+  })
+
+  console.log("====== RESULT ======")
+
+  gameState.players.sort((a, b) => b.score - a.score)
+
+  gameState.players.forEach((p, i) => {
+    console.log(
+      `${i+1}位`,
+      p.name,
+      "score:",
+      p.score
+    )
   })
 
   // スコアの降順（高い順）にソート
@@ -557,3 +660,4 @@ module.exports = {
   passTurn,
   calculateResult
 }
+
