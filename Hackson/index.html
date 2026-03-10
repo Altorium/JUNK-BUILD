@@ -12,12 +12,6 @@
     <div id="screen-title" class="screen">
         <h1>JUNK BUILD</h1>
         <p>PCパーツを集めて最強のマシンを組み立てろ！</p>
-        <div id="player-count-select">
-            <label>プレイヤー人数：</label>
-            <button class="btn player-count-btn" data-count="2">2人</button>
-            <button class="btn player-count-btn" data-count="3">3人</button>
-            <button class="btn player-count-btn active" data-count="4">4人</button>
-        </div>
         <button id="btn-start" class="btn btn-primary">ゲームスタート</button>
     </div>
 
@@ -81,6 +75,7 @@
         <div id="draft-actions">
             <div id="selected-card-preview"></div>
             <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
+            <button id="btn-skip-turn" class="btn btn-secondary">スキップ</button>
         </div>
     </div>
 
@@ -237,4 +232,3 @@
     <script src="ui-boot.js"></script>
 </body>
 </html>
-
