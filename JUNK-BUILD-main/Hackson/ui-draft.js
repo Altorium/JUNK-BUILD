@@ -24,6 +24,9 @@ let selectedCard    = null
 // セットフェーズ管理
 let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
 
+// 高騰イベント（準備画面で決定し、デッキ生成後に適用する）
+let currentEvent = null
+
 const HUMAN_INDEX = 0   // P1が人間
 const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
 
@@ -132,8 +135,7 @@ function renderPrepScreen() {
     budgetList.appendChild(div)
   })
 
-  const event = generateEvent()
-  applyEvent(event)
+  currentEvent = generateEvent()
 
   const eventLabels = {
     gpu_up:    'グラボ高騰：全GPUカードのコストが上昇',
@@ -141,11 +143,12 @@ function renderPrepScreen() {
     all_up:    '半導体不足：全パーツのコストが上昇',
     none:      'イベントなし：通常価格のまま'
   }
-  document.getElementById('event-display').textContent = eventLabels[event] ?? event
+  document.getElementById('event-display').textContent = eventLabels[currentEvent] ?? currentEvent
 }
 
 document.getElementById('btn-to-draft').addEventListener('click', () => {
   deck = createDeck()
+  applyEvent(currentEvent, deck)
   field = createField(deck)
   draftOrder      = [0, 1, 2, 3]
   draftOrderIndex = 0
