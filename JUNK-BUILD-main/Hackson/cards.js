@@ -10,7 +10,8 @@ const cards = {
       score: 8000,
       power: 250,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 9",
@@ -19,7 +20,8 @@ const cards = {
       score: 8000,
       power: 200,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I7",
@@ -28,7 +30,8 @@ const cards = {
       score: 6000,
       power: 150,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 7",
@@ -37,7 +40,8 @@ const cards = {
       score: 6000,
       power: 105,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I5",
@@ -46,7 +50,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 5",
@@ -55,7 +60,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I3",
@@ -64,7 +70,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 3",
@@ -73,7 +80,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "new",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I9",
@@ -82,7 +90,8 @@ const cards = {
       score: 8000,
       power: 250,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 9",
@@ -91,7 +100,8 @@ const cards = {
       score: 8000,
       power: 200,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I7",
@@ -100,7 +110,8 @@ const cards = {
       score: 6000,
       power: 150,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 7",
@@ -109,7 +120,8 @@ const cards = {
       score: 6000,
       power: 105,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I5",
@@ -118,7 +130,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 5",
@@ -127,7 +140,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I3",
@@ -136,7 +150,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 3",
@@ -145,7 +160,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "used",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I9",
@@ -154,7 +170,8 @@ const cards = {
       score: 8000,
       power: 250,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 9",
@@ -163,7 +180,8 @@ const cards = {
       score: 8000,
       power: 200,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I7",
@@ -172,7 +190,8 @@ const cards = {
       score: 6000,
       power: 150,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 7",
@@ -181,7 +200,8 @@ const cards = {
       score: 6000,
       power: 105,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I5",
@@ -190,7 +210,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 5",
@@ -199,7 +220,8 @@ const cards = {
       score: 4000,
       power: 65,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     },
     {
       name: "Gore I3",
@@ -208,7 +230,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"Intel"
     },
     {
       name: "Rizen 3",
@@ -217,7 +240,8 @@ const cards = {
       score: 2000,
       power: 35,
       reliability: "junk",
-      type:"cpu"
+      type:"cpu",
+      brand:"AMD"
     }
   ],
 
@@ -228,7 +252,8 @@ const cards = {
       score: 9000,
       power: 450,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 900",
@@ -236,7 +261,8 @@ const cards = {
       score: 8500,
       power: 350,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 70",
@@ -244,7 +270,8 @@ const cards = {
       score: 6000,
       power: 250,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 700",
@@ -252,7 +279,8 @@ const cards = {
       score: 5500,
       power: 220,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 60",
@@ -260,7 +288,8 @@ const cards = {
       score: 3500,
       power: 150,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 600",
@@ -268,7 +297,8 @@ const cards = {
       score: 3000,
       power: 130,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 50",
@@ -276,7 +306,8 @@ const cards = {
       score: 2000,
       power: 75,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 500",
@@ -284,7 +315,8 @@ const cards = {
       score: 2000,
       power: 50,
       reliability: "new",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 90",
@@ -292,7 +324,8 @@ const cards = {
       score: 9000,
       power: 450,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 900",
@@ -300,7 +333,8 @@ const cards = {
       score: 8500,
       power: 350,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 70",
@@ -308,7 +342,8 @@ const cards = {
       score: 6000,
       power: 250,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 700",
@@ -316,7 +351,8 @@ const cards = {
       score: 5500,
       power: 220,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 60",
@@ -324,7 +360,8 @@ const cards = {
       score: 3500,
       power: 150,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 600",
@@ -332,7 +369,8 @@ const cards = {
       score: 3000,
       power: 130,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 50",
@@ -340,7 +378,8 @@ const cards = {
       score: 2000,
       power: 75,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 500",
@@ -348,7 +387,8 @@ const cards = {
       score: 2000,
       power: 50,
       reliability: "used",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 90",
@@ -356,7 +396,8 @@ const cards = {
       score: 9000,
       power: 450,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 900",
@@ -364,7 +405,8 @@ const cards = {
       score: 8500,
       power: 350,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 70",
@@ -372,7 +414,8 @@ const cards = {
       score: 6000,
       power: 250,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 700",
@@ -380,7 +423,8 @@ const cards = {
       score: 5500,
       power: 220,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 60",
@@ -388,7 +432,8 @@ const cards = {
       score: 3500,
       power: 150,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 600",
@@ -396,7 +441,8 @@ const cards = {
       score: 3000,
       power: 130,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     },
     {
       name: "Z-Force 50",
@@ -404,7 +450,8 @@ const cards = {
       score: 2000,
       power: 75,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"NVIDIA"
     },
     {
       name: "Radion 500",
@@ -412,7 +459,8 @@ const cards = {
       score: 2000,
       power: 50,
       reliability: "junk",
-      type:"gpu"
+      type:"gpu",
+      brand:"AMD"
     }
   ],
 
@@ -474,7 +522,7 @@ const cards = {
       socket: "[G]",
       memoryType: "DDR5",
       reliability: "new",
-      type:"psu"
+      type:"motherboard"
     },
     {
       name: "Rizen X-Board",
@@ -482,7 +530,7 @@ const cards = {
       socket: "[R]",
       memoryType: "DDR5",
       reliability: "new",
-      type:"psu"
+      type:"motherboard"
     },
     {
       name: "Gore B-Board",
@@ -490,7 +538,7 @@ const cards = {
       socket: "[G]",
       memoryType: "DDR4",
       reliability: "new",
-      type:"psu"
+      type:"motherboard"
     },
     {
       name: "Rizen B-Board",
@@ -498,7 +546,7 @@ const cards = {
       socket: "[R]",
       memoryType: "DDR4",
       reliability: "new",
-      type:"psu"
+      type:"motherboard"
     }
   ],
   psu: [
