@@ -236,8 +236,6 @@ function passTurn() {
   gameState.turn =
     (gameState.turn + 1) %
     gameState.players.length
-
-  checkGameEnd()
 }
 
 // =====================
@@ -532,142 +530,80 @@ function autoBuild(hand) {
 // =====================
 
 function calculateResult() {
-
   gameState.players.forEach(player => {
-
     console.log("\n==============================")
-    console.log("PLAYER:", player.name)
+    console.log(`👤 PLAYER: ${player.name}`)
     console.log("==============================")
 
     const build = autoBuild(player.hand)
 
-    console.log("build:", build)
-
     if (!build.cpu || !build.gpu || !build.memory || !build.motherboard || !build.psu) {
-      console.log("Missing parts")
+      console.log("❌ Missing parts (パーツ不足)")
       player.score = 0
       return
     }
 
-    // =====================
-    // 互換チェック
-    // =====================
-
-    const compatibility = checkCompatibility(build)
-
-    console.log("compatibility:", compatibility)
-
-    if (!compatibility) {
+    // ① 引数に player.name を追加
+    if (!checkCompatibility(build, player.name)) {
       player.score = 0
       return
     }
 
-    // =====================
-    // 故障チェック
-    // =====================
-
-    player.broken = !reliabilityCheck(build)
-
-    console.log("broken:", player.broken)
-
+    // ① 引数に player.name を追加
+    player.broken = !reliabilityCheck(build, player.name)
     if (player.broken) {
       player.score = 0
       return
     }
 
-    // =====================
-    // ベンチ計算
-    // =====================
+    // ② benchmark関数を使ってスッキリさせる
+    let score = benchmark(build)
+    
+    console.log("--- 📊 ベンチマーク基礎スコア ---")
+    console.log(`CPU: ${build.cpu.score || 0} / GPU: ${build.gpu.score || 0}`)
+    console.log(`ボトルネック適用後: ${score}`)
 
-    const cpu = build.cpu.score || 0
-    const gpu = build.gpu.score || 0
-
-    const baseScore = cpu + gpu
-
-    const ratio =
-      Math.min(cpu, gpu) /
-      Math.max(cpu, gpu)
-
-    const bottleneck =
-      0.5 + 0.5 * ratio
-
-    let score = baseScore * bottleneck
-
-    console.log("CPU score:", cpu)
-    console.log("GPU score:", gpu)
-    console.log("Base score:", baseScore)
-    console.log("Ratio:", ratio)
-    console.log("Bottleneck:", bottleneck)
-    console.log("After benchmark:", score)
-
-    // =====================
-    // シナジー
-    // =====================
-
+    // --- シナジー ---
     const beforeSynergy = score
     score = synergyBonus(score, build)
+    if (score > beforeSynergy) {
+      console.log(`✨ シナジーボーナス発動! ${beforeSynergy} ➡️ ${score}`)
+    }
 
-    console.log("Synergy before:", beforeSynergy)
-    console.log("Synergy after:", score)
-
-    // =====================
-    // 電源余裕
-    // =====================
-
-    const power =
-      (build.cpu.power || 0) +
-      (build.gpu.power || 0)
-
-    const marginRate =
-      (build.psu.capacity - power) /
-      build.psu.capacity
-
-    console.log("Power usage:", power)
-    console.log("PSU capacity:", build.psu.capacity)
-    console.log("Power margin rate:", marginRate)
-
+    // --- 電源余裕 ---
+    const power = (build.cpu.power || 0) + (build.gpu.power || 0)
+    const marginRate = (build.psu.capacity - power) / build.psu.capacity
+    console.log(`🔌 電源使用量: ${power}W / 容量: ${build.psu.capacity}W (余裕: ${Math.floor(marginRate * 100)}%)`)
+    
     const beforePower = score
     score = powerBonus(score, build)
+    console.log(`⚡ 電源ボーナス適用後: ${score}`)
 
-    console.log("Power bonus before:", beforePower)
-    console.log("Power bonus after:", score)
-
-    // =====================
-    // その他ボーナス
-    // =====================
-
-    console.log("Memory capacity:", build.memory.capacity)
-    console.log("PSU rating:", build.psu.rating)
-
-    console.log("Hand effects:")
+    // --- その他ボーナス ---
+    console.log("--- 🎁 その他ボーナス ---")
+    console.log(`メモリ容量: ${build.memory.capacity}GB`)
+    console.log(`電源品質: ${build.psu.rating}`)
+    
     player.hand.forEach(c => {
-      if (c.effect) {
-        console.log("-", c.effect)
-      }
+      if (c.effect) console.log(`🃏 手札エフェクト: ${c.effect}`)
     })
 
     const beforeBonus = score
     score = bonus(score, build, player.hand)
 
-    console.log("Bonus before:", beforeBonus)
-    console.log("Final score:", score)
+    console.log(`📈 最終ボーナス適用: ${beforeBonus} ➡️ ${score}`)
+    console.log(`🏆 【${player.name}】最終スコア: ${score}`)
 
     player.score = score
-
   })
 
-  console.log("\n====== RESULT ======")
+  console.log("\n========= 👑 最終結果 👑 =========")
 
   // スコアの降順（高い順）にソート
   gameState.players.sort((a, b) => b.score - a.score)
 
   gameState.players.forEach((p, i) => {
-    console.log(
-      `${i + 1}位`,
-      p.name,
-      "score:",
-      p.score
-    )
+    console.log(`${i + 1}位: ${p.name} (Score: ${p.score})`)
   })
 
   return gameState.players
@@ -683,6 +619,8 @@ module.exports = {
   passTurn,
   calculateResult
 }
+
+
 
 
 
