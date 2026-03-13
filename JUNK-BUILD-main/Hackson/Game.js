@@ -486,24 +486,43 @@ function powerBonus(score, build) {
  * @returns {number} 最終スコア（整数切り捨て）
  */
 function bonus(score, build, hand) {
-  let multiplier = 1
+  let multiplier = 1;
 
+  // PSUとメモリのボーナス計算（既存のまま）
   const psuBonus = {
     Bronze: 0.02,
     Gold: 0.05,
     Platinum: 0.08
-  }
+  };
+  multiplier += psuBonus[build.psu.rating] || 0;
+  multiplier += (build.memory.capacity || 0) * 0.005;
 
-  multiplier += psuBonus[build.psu.rating] || 0
-  multiplier += (build.memory.capacity || 0) * 0.005
-
+  // 手札のエフェクトを1枚ずつチェック
   hand.forEach(c => {
+    
+    // 既存のエフェクト
     if (c.effect === "5%プラス") {
-      multiplier += 0.05
-    }
-  })
+      multiplier += 0.05;
+    } 
 
-  return Math.floor(score * multiplier)
+    // 新しく追加する「謎のケースファン」
+    else if (c.effect === "さいころをふって1-3なら10%プラス，4-6なら10%マイナス") {
+      
+      const dice = Math.floor(Math.random() * 6) + 1;
+
+      if (dice <= 3) {
+        multiplier += 0.10;
+        console.log(`🎲 【謎のケースファン】サイコロは「${dice}」！ 大当たり！ 10%プラス！`);
+      } else {
+        multiplier -= 0.10;
+        console.log(`🎲 【謎のケースファン】サイコロは「${dice}」... 異音がする... 10%マイナス...`);
+      }
+      
+    }
+
+  });
+
+  return Math.floor(score * multiplier);
 }
 
 // =====================
@@ -619,6 +638,7 @@ module.exports = {
   passTurn,
   calculateResult
 }
+
 
 
 
