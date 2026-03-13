@@ -68,6 +68,14 @@ function row(label, value) {
 // =====================
 // カード要素の生成
 // =====================
+const cardTypeImageMap = {
+  cpu:         'images/computer_cpu.png',
+  gpu:         'images/computer_gpu.png',
+  memory:      'images/computer_memory.png',
+  motherboard: 'images/computer_motherboard.png',
+  psu:         'images/computer_dengen_unit.png'
+}
+
 function createCardEl(card) {
   const el = document.createElement('div')
   el.className = 'card'
@@ -98,6 +106,15 @@ function createCardEl(card) {
 
   el.appendChild(costEl)
   el.appendChild(typeEl)
+
+  if (cardTypeImageMap[card.type]) {
+    const imgEl = document.createElement('img')
+    imgEl.className = 'card-img'
+    imgEl.src = cardTypeImageMap[card.type]
+    imgEl.alt = card.type
+    el.appendChild(imgEl)
+  }
+
   el.appendChild(nameEl)
   el.appendChild(statsEl)
 
@@ -274,9 +291,37 @@ function processCpuTurn() {
   const currentIndex  = draftOrder[draftOrderIndex]
   const currentPlayer = players[currentIndex]
 
-  const available = field.filter(c => c.cost <= currentPlayer.budget)
+  const uniqueTypes = ['cpu', 'gpu', 'memory', 'motherboard', 'psu']
+
+  // 予算内 かつ 未取得タイプのみ
+  const baseAvailable = field.filter(c => {
+    if (c.cost > currentPlayer.budget) return false
+    if (uniqueTypes.includes(c.type) && currentPlayer.hand.some(h => h.type === c.type)) return false
+    return true
+  })
+
+  // 互換性の絞り込み
+  const heldCpu = currentPlayer.hand.find(c => c.type === 'cpu')
+  const heldMb  = currentPlayer.hand.find(c => c.type === 'motherboard')
+
+  let available = baseAvailable.filter(c => {
+    // マザーボード：手持ちCPUのソケットに合うもの
+    if (c.type === 'motherboard' && heldCpu) return c.socket === heldCpu.socket
+    // メモリ：手持ちマザーボードの規格に合うもの
+    if (c.type === 'memory' && heldMb) return c.memoryType === heldMb.memoryType
+    return true
+  })
+
+  // 互換フィルター後に空なら互換なしのリストにフォールバック
+  if (available.length === 0) available = baseAvailable
+
+  // それでも空なら重複タイプOK・予算内なら何でも買う
   if (available.length === 0) {
-    // 買えるカードがない場合はスキップ
+    available = field.filter(c => c.cost <= currentPlayer.budget)
+  }
+
+  // 予算が尽きて何も買えない場合のみスキップ
+  if (available.length === 0) {
     nextDraftTurn()
     return
   }
