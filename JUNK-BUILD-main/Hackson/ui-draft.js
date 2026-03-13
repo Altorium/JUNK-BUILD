@@ -73,7 +73,8 @@ const cardTypeImageMap = {
   gpu:         'images/computer_gpu.png',
   memory:      'images/computer_memory.png',
   motherboard: 'images/computer_motherboard.png',
-  psu:         'images/computer_dengen_unit.png'
+  psu:         'images/computer_dengen_unit.png',
+  support:     'images/computer_support.png'
 }
 
 function createCardEl(card) {
