@@ -96,6 +96,12 @@ function showBootResult(success, compatible) {
       ? 'パーツの不具合により起動に失敗しました。'
       : 'パーツの互換性エラーにより起動に失敗しました。'
     document.getElementById('boot-failure-reason').textContent = reason
+    
+//起死回生デバッグ済みなら再挑戦ボタンを隠す
+    if(usedDebug){
+      document.getElementById('btn-debug').classList.add('hidden')
+    }else{
+      document.getElementById('btn-debug').classList.remove('hidden')
   }
 }
 
@@ -115,8 +121,27 @@ document.getElementById('btn-debug').addEventListener('click', () => {
 
 // 諦めてスキップ → スコア0でベンチマークへ
 document.getElementById('btn-skip-benchmark').addEventListener('click', () => {
-  bootPlayer.score = 0
-  allFinalScores.push({ name: bootPlayer.name, score: 0 })
+  // 手札のコスト合計 × 5 の減点スコア
+  let assetValue = 0
+  bootPlayer.hand.forEach(c => { assetValue += (c.cost || 0) })
+  bootPlayer.score = assetValue * 5
+
+  // CPUプレイヤーのスコアを計算（showBonusScreenと同じロジック）
+  players.forEach((p, i) => {
+    if (i === HUMAN_INDEX) return
+    if (!p.build) { p.score = 0; return }
+    const { cpu, gpu, memory, motherboard, psu } = p.build
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
+    if (!checkCompatibility(p.build)) { p.score = 0; return }
+    if (!reliabilityCheck(p.build))   { p.score = 0; return }
+
+    let s = benchmark(p.build)
+    s = synergyBonus(s, p.build)
+    s = powerBonus(s, p.build)
+    s = bonus(s, p.build, p.hand)
+    p.score = Math.floor(s)
+  })
+
   showFinalResult()
 })
 
