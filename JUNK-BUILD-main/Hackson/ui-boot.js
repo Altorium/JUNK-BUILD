@@ -140,7 +140,15 @@ function renderDebugHand() {
   const container = document.getElementById('debug-hand-cards')
   container.innerHTML = ''
 
-  // セット画面と同様にスロット割り当て
+  // スロットをリセット
+  ;['cpu', 'gpu', 'memory', 'motherboard', 'psu'].forEach(key => {
+    const slotCard = document.querySelector(`#debug-slot-${key} .slot-card`)
+    if (slotCard) {
+      slotCard.textContent = ''
+      slotCard.classList.remove('filled')
+    }
+  })
+
   const debugBuild = { cpu: null, gpu: null, memory: null, motherboard: null, psu: null }
 
   bootPlayer.hand.forEach(card => {
@@ -150,10 +158,27 @@ function renderDebugHand() {
 
     if (slotKey) {
       el.addEventListener('click', () => {
-        // 選択ハイライト
-        container.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'))
-        el.classList.add('selected')
-        debugBuild[slotKey] = card
+        // 同スロットに既存カードがあれば手札に戻す
+        if (debugBuild[slotKey]) {
+          const prevCard = debugBuild[slotKey]
+          container.querySelectorAll('.card').forEach(c => {
+            if (c.querySelector('.card-name')?.textContent === prevCard.name) {
+              c.style.opacity       = ''
+              c.style.pointerEvents = ''
+            }
+          })
+        }
+
+        debugBuild[slotKey]    = card
+        el.style.opacity       = '0.35'
+        el.style.pointerEvents = 'none'
+
+        // スロット表示を更新
+        const slotCard = document.querySelector(`#debug-slot-${slotKey} .slot-card`)
+        if (slotCard) {
+          slotCard.textContent = card.name
+          slotCard.classList.add('filled')
+        }
 
         // 全スロット揃ったら再起動ボタン有効化
         const filled = Object.values(debugBuild).every(v => v !== null)
@@ -190,6 +215,10 @@ function showBenchmarkScreen(player, penaltyApplied) {
   const maxScore = cpuScore + gpuScore
 
   let totalScore = benchmark(build)
+  totalScore = synergyBonus(totalScore, build)  // シナジーボーナス
+  totalScore = powerBonus(totalScore, build)    // 電源ボーナス 
+
+  
   if (penaltyApplied) {
     totalScore = Math.floor(totalScore * 0.7)   // デバッグペナルティ30%
   }
@@ -263,6 +292,8 @@ function showBonusScreen(player, baseScore) {
   players.forEach((p, i) => {
     if (i === HUMAN_INDEX) return
     if (!p.build) { p.score = 0; return }
+    const { cpu, gpu, memory, motherboard, psu } = p.build
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
     if (!checkCompatibility(p.build)) { p.score = 0; return }
     if (!reliabilityCheck(p.build))   { p.score = 0; return }
 
