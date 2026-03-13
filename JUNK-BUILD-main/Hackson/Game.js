@@ -8,7 +8,7 @@
  * @property {number} cost - 価格（コスト）
  * @property {"new"|"used"|"junk"} [reliability] - 信頼度
  * @property {string}[brand] - メーカー・ブランド ("AMD", "Intel", "NVIDIA" など)
- * @property {string} [socket] - CPUソケット形状
+ * @property {string}[socket] - CPUソケット形状
  * @property {string} [memoryType] - メモリ規格 (例: "DDR4")
  * @property {number} [power] - 消費電力 (W)
  * @property {number} [capacity] - 容量 (メモリのGB、またはPSUのW)
@@ -61,6 +61,8 @@ class Player {
     this.score = 0
     /** @type {boolean} 故障フラグ */
     this.broken = false
+    /** @type {string} 画面表示用の結果メッセージ */
+    this.resultMessage = "" 
   }
 }
 
@@ -356,12 +358,11 @@ function checkCompatibility(build, playerName) {
   }
 
   // ③ 電力チェック
-  // ※念のためNumber()で数値化して計算します
   const power = Number(build.cpu.power) + Number(build.gpu.power)
   const capacity = Number(build.psu.capacity)
   
   if (power > capacity) {
-    console.log(`❌ [${playerName}] 互換性エラー: 電力不足`)
+    console.log(`❌[${playerName}] 互換性エラー: 電力不足`)
     console.log(`   ├─ 必要電力: ${power}W (CPU: ${build.cpu.power}W + GPU: ${build.gpu.power}W)`)
     console.log(`   └─ 電源容量: ${capacity}W`)
     return false
@@ -387,7 +388,6 @@ function reliabilityCheck(build, playerName) {
     junk: 0.5    // 50%成功
   }
 
-  // どのパーツが壊れたか分かるようにラベルを付ける
   const parts =[
     { label: "CPU", data: build.cpu },
     { label: "GPU", data: build.gpu },
@@ -400,7 +400,6 @@ function reliabilityCheck(build, playerName) {
     const rel = p.data.reliability || "new"
     const successRate = rates[rel]
 
-    // 乱数と確率を比較
     const roll = Math.random()
     if (roll > successRate) {
       console.log(`💥 [${playerName}] 起動失敗: パーツが故障しました！`)
@@ -488,7 +487,6 @@ function powerBonus(score, build) {
 function bonus(score, build, hand) {
   let multiplier = 1;
 
-  // PSUとメモリのボーナス計算（既存のまま）
   const psuBonus = {
     Bronze: 0.02,
     Gold: 0.05,
@@ -497,19 +495,12 @@ function bonus(score, build, hand) {
   multiplier += psuBonus[build.psu.rating] || 0;
   multiplier += (build.memory.capacity || 0) * 0.005;
 
-  // 手札のエフェクトを1枚ずつチェック
   hand.forEach(c => {
-    
-    // 「RGBケースファン」
     if (c.effect === "5%プラス") {
       multiplier += 0.05;
     } 
-
-    // 「謎のケースファン」
     else if (c.effect === "さいころをふって1-3なら10%プラス，4-6なら10%マイナス") {
-      
       const dice = Math.floor(Math.random() * 6) + 1;
-
       if (dice <= 3) {
         multiplier += 0.10;
         console.log(`🎲 【謎のケースファン】サイコロは「${dice}」！ 大当たり！ 10%プラス！`);
@@ -517,23 +508,15 @@ function bonus(score, build, hand) {
         multiplier -= 0.10;
         console.log(`🎲 【謎のケースファン】サイコロは「${dice}」... 異音がする... 10%マイナス...`);
       }
-      
     }
-
   });
 
   return Math.floor(score * multiplier);
 }
 
 // =====================
-// PC構成
+// PC構成 (UI側で組み上げる場合は不要ですが、NPC等のために残しておきます)
 // =====================
-
-/**
- * 手札から必須パーツを抽出して構成を作成する
- * @param {Card[]} hand - 手札
- * @returns {Build} 組まれた構成オブジェクト
- */
 function autoBuild(hand) {
   return {
     cpu: hand.find(c => c.type === "cpu"),
@@ -554,42 +537,64 @@ function calculateResult() {
     console.log(`👤 PLAYER: ${player.name}`)
     console.log("==============================")
 
-    const build = autoBuild(player.hand)
+    // 画面（UI側）でプレイヤーがセットした構成(player.build)を使用します。
+    // ※NPCなどでセットされていない場合は autoBuild で代用する安全策を入れています。
+    const build = player.build || autoBuild(player.hand);
 
-    if (!build.cpu || !build.gpu || !build.memory || !build.motherboard || !build.psu) {
-      console.log("❌ Missing parts (パーツ不足)")
-      player.score = 0
-      return
+    // ==========================================
+    // ① パーツ不足（またはスキップ）の場合
+    // ==========================================
+    // もしUI側でスキップを選んで build が null になっていたり、パーツが欠けている場合
+    if (!build || !build.cpu || !build.gpu || !build.memory || !build.motherboard || !build.psu) {
+      console.log("❌ Missing parts または スキップが選択されました")
+      
+      // メルカリ売却パターン：手札にある全カードのコスト合計 × 10点
+      let assetValue = 0;
+      player.hand.forEach(c => {
+        assetValue += (c.cost || 0);
+      });
+      
+      const junkScore = assetValue * 5;
+      console.log(`🔧 【パーツ不足 / スキップ】PCを構築せず、パーツ資産を売却しました。`);
+      console.log(`   👉 お情けとして手持ちパーツの資産価値をスコア化... (コスト合計 × 10点)`);
+      console.log(`🏆 【${player.name}】最終スコア: ${junkScore}`);
+      
+      player.score = junkScore;
+      // 🌟 画面表示用のメッセージを保存
+      player.resultMessage = `【売却】PCの形にならなかったため、パーツ資産として売却しました。\nスコア: ${junkScore}`;
+      return; 
     }
 
-    // ① 引数に player.name を追加
+    // ==========================================
+    // ② 互換性・故障チェックの判定をメモする
+    // ==========================================
+    let failReason = null; 
+
     if (!checkCompatibility(build, player.name)) {
-      player.score = 0
-      return
+      failReason = "互換性エラー";
+    } 
+    else {
+      player.broken = !reliabilityCheck(build, player.name);
+      if (player.broken) {
+        failReason = "パーツ故障";
+      }
     }
 
-    // ① 引数に player.name を追加
-    player.broken = !reliabilityCheck(build, player.name)
-    if (player.broken) {
-      player.score = 0
-      return
-    }
-
-    // ② benchmark関数を使ってスッキリさせる
+    // ==========================================
+    // ③ エラーが起きていても、とりあえず「本来のスコア」を計算する
+    // ==========================================
     let score = benchmark(build)
     
     console.log("--- 📊 ベンチマーク基礎スコア ---")
     console.log(`CPU: ${build.cpu.score || 0} / GPU: ${build.gpu.score || 0}`)
     console.log(`ボトルネック適用後: ${score}`)
 
-    // --- シナジー ---
     const beforeSynergy = score
     score = synergyBonus(score, build)
     if (score > beforeSynergy) {
       console.log(`✨ シナジーボーナス発動! ${beforeSynergy} ➡️ ${score}`)
     }
 
-    // --- 電源余裕 ---
     const power = (build.cpu.power || 0) + (build.gpu.power || 0)
     const marginRate = (build.psu.capacity - power) / build.psu.capacity
     console.log(`🔌 電源使用量: ${power}W / 容量: ${build.psu.capacity}W (余裕: ${Math.floor(marginRate * 100)}%)`)
@@ -598,7 +603,6 @@ function calculateResult() {
     score = powerBonus(score, build)
     console.log(`⚡ 電源ボーナス適用後: ${score}`)
 
-    // --- その他ボーナス ---
     console.log("--- 🎁 その他ボーナス ---")
     console.log(`メモリ容量: ${build.memory.capacity}GB`)
     console.log(`電源品質: ${build.psu.rating}`)
@@ -609,13 +613,37 @@ function calculateResult() {
 
     const beforeBonus = score
     score = bonus(score, build, player.hand)
-
     console.log(`📈 最終ボーナス適用: ${beforeBonus} ➡️ ${score}`)
-    console.log(`🏆 【${player.name}】最終スコア: ${score}`)
 
+    // ==========================================
+    // ④ 最後に、メモしておいた失敗理由に応じてペナルティをかける
+    // ==========================================
+    if (failReason === "互換性エラー") {
+      console.log("⚠️ 【互換性エラー ペナルティ】 規格が合わず組み立てミス！");
+      console.log("   👉 パーツは無事なので、本来のスコアの【70%】を獲得！");
+      score = Math.floor(score * 0.7);
+      // 🌟 画面表示用のメッセージを保存
+      player.resultMessage = `【互換性エラー】規格が合わず組み立てミス... 本来のスコアの70%を獲得！\n最終スコア: ${score}`;
+    } 
+    else if (failReason === "パーツ故障") {
+      console.log("💥 【パーツ故障 ペナルティ】 ジャンクパーツのせいで起動時にショート！");
+      console.log("   👉 他のパーツも巻き添えに... 本来のスコアの【30%】までダウン！");
+      score = Math.floor(score * 0.3);
+      // 🌟 画面表示用のメッセージを保存
+      player.resultMessage = `【パーツ故障】起動時にショートし他のパーツも巻き添えに... 本来のスコアの30%までダウン\n最終スコア: ${score}`;
+    } else {
+      console.log("🟢 無事に起動成功！ ペナルティなし！");
+      // 🌟 画面表示用のメッセージを保存
+      player.resultMessage = `【起動成功】ベンチマーク完走！\n最終スコア: ${score}`;
+    }
+
+    console.log(`🏆 【${player.name}】最終スコア: ${score}`)
     player.score = score
   })
 
+  // ==========================================
+  // 順位発表
+  // ==========================================
   console.log("\n========= 👑 最終結果 👑 =========")
 
   // スコアの降順（高い順）にソート
@@ -627,17 +655,7 @@ function calculateResult() {
 
   return gameState.players
 }
-// =====================
-// exports
-// =====================
 
-module.exports = {
-  gameState,
-  initGame,
-  pickCard,
-  passTurn,
-  calculateResult
-}
 
 
 
