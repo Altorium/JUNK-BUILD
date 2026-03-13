@@ -588,14 +588,15 @@ const cards = {
       name: "RGBケースファン",
       cost: 10,
       effect: "5%プラス", //サポカのここの書き方はどうする？パーセンテージ前提で「5」とか数字だけにする？
-      type:"sup"
+      type:"support"
     },
     {
       name: "謎のケースファン",
       cost: 10,
       effect: "さいころをふって1-3なら10%プラス，4-6なら10%マイナス",
-      type:"sup"
+      type:"support"
     }
   ]
 
 };
+
