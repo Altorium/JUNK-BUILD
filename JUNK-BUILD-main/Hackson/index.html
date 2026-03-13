@@ -149,10 +149,38 @@
     <div id="screen-debug" class="screen hidden">
         <h2>起死回生デバッグ</h2>
         <p>山札から1枚追加ドロー！もう一度PCを組み直せ！</p>
-        <div id="debug-hand">
-            <h3>使える手札</h3>
-            <div id="debug-hand-cards">
-                <!-- ui-boot.jsが動的に生成 -->
+        <div id="debug-layout">
+            <!-- 手札一覧 -->
+            <div id="debug-hand">
+                <h3>使える手札</h3>
+                <div id="debug-hand-cards">
+                    <!-- ui-boot.jsが動的に生成 -->
+                </div>
+            </div>
+
+            <!-- PC構成スロット -->
+            <div id="debug-slots">
+                <h3>PC構成</h3>
+                <div class="slot" id="debug-slot-cpu">
+                    <span class="slot-label">CPU</span>
+                    <div class="slot-card"></div>
+                </div>
+                <div class="slot" id="debug-slot-gpu">
+                    <span class="slot-label">GPU</span>
+                    <div class="slot-card"></div>
+                </div>
+                <div class="slot" id="debug-slot-memory">
+                    <span class="slot-label">メモリ</span>
+                    <div class="slot-card"></div>
+                </div>
+                <div class="slot" id="debug-slot-motherboard">
+                    <span class="slot-label">マザーボード</span>
+                    <div class="slot-card"></div>
+                </div>
+                <div class="slot" id="debug-slot-psu">
+                    <span class="slot-label">電源</span>
+                    <div class="slot-card"></div>
+                </div>
             </div>
         </div>
         <p class="warning-text">※起動成功しても、ベンチマークスコアにペナルティが課されます</p>
@@ -232,5 +260,6 @@
     <script src="ui-boot.js"></script>
 </body>
 </html>
+
 
 
