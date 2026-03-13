@@ -2,6 +2,11 @@
    CSS変数（テーマ設定）
    ここを変えるだけで全体の色が変わる
    ===================== */
+
+html {
+   zoom:1.25;
+}
+
 :root {
   --bg-primary:    #0a0f0a;
   --bg-secondary:  #111a11;
@@ -643,3 +648,4 @@ h3 {
   color: var(--accent);
   font-size: 1.4rem;
 }
+
