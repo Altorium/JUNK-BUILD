@@ -86,8 +86,10 @@ function createCardEl(card) {
   costEl.textContent = '¥' + (card.cost ?? '—')
 
   const typeEl = document.createElement('div')
-  typeEl.className = 'card-type'
-  typeEl.textContent = getCardType(card)
+  const typeClassMap = { CPU: 'cpu', GPU: 'gpu', MEM: 'mem', MB: 'mb', PSU: 'psu', SUP: 'sup' }
+  const typeKey = getCardType(card)
+  typeEl.className = `card-type card-type-${typeClassMap[typeKey] ?? 'sup'}`
+  typeEl.textContent = typeKey
 
   const nameEl = document.createElement('div')
   nameEl.className = 'card-name'
@@ -108,13 +110,6 @@ function createCardEl(card) {
   el.appendChild(costEl)
   el.appendChild(typeEl)
 
-  if (cardTypeImageMap[card.type]) {
-    const imgEl = document.createElement('img')
-    imgEl.className = 'card-img'
-    imgEl.src = cardTypeImageMap[card.type]
-    imgEl.alt = card.type
-    el.appendChild(imgEl)
-  }
 
   el.appendChild(nameEl)
   el.appendChild(statsEl)
@@ -391,10 +386,11 @@ function startSetPhase() {
   document.getElementById('compatibility-check-result').textContent = ''
   document.getElementById('btn-boot').disabled = true
 
+  // 必須パーツが揃えられない場合はスキップボタンを表示
   const required = ['CPU', 'GPU', 'MEM', 'MB', 'PSU']
-  const hand = player[HUMAN_INDEX].hand
+  const hand = players[HUMAN_INDEX].hand
   const canBuild = required.every(t => hand.some(c => getCardType(c) === t))
-  document.getElementById('btn-set-skip').classList.toggle('hidden',canBuild)
+  document.getElementById('btn-set-skip').classList.toggle('hidden', canBuild)
 
   showScreen('screen-set')
 }
