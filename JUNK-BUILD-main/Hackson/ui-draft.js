@@ -391,6 +391,11 @@ function startSetPhase() {
   document.getElementById('compatibility-check-result').textContent = ''
   document.getElementById('btn-boot').disabled = true
 
+  const required = ['CPU', 'GPU', 'MEM', 'MB', 'PSU']
+  const hand = player[HUMAN_INDEX].hand
+  const canBuild = required.every(t => hand.some(c => getCardType(c) === t))
+  document.getElementById('btn-set-skip').classList.toggle('hidden',canBuild)
+
   showScreen('screen-set')
 }
 
@@ -476,4 +481,32 @@ document.getElementById('btn-boot').addEventListener('click', () => {
   players[HUMAN_INDEX].build = { ...currentBuild }
   // ui-boot.js に制御を渡す
   startBoot(players[HUMAN_INDEX])
+})
+
+// =====================
+// セット画面：パーツ不足で諦めてスキップ
+// =====================
+document.getElementById('btn-set-skip').addEventListener('click', () => {
+  // 手札のコスト合計 × 5 の減点スコア（boot画面のスキップと同じロジック）
+  let assetValue = 0
+  players[HUMAN_INDEX].hand.forEach(c => { assetValue += (c.cost || 0) })
+  players[HUMAN_INDEX].score = assetValue * 5
+
+  // CPUプレイヤーのスコアを計算
+  players.forEach((p, i) => {
+    if (i === HUMAN_INDEX) return
+    if (!p.build) { p.score = 0; return }
+    const { cpu, gpu, memory, motherboard, psu } = p.build
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
+    if (!checkCompatibility(p.build)) { p.score = 0; return }
+    if (!reliabilityCheck(p.build))   { p.score = 0; return }
+
+    let s = benchmark(p.build)
+    s = synergyBonus(s, p.build)
+    s = powerBonus(s, p.build)
+    s = bonus(s, p.build, p.hand)
+    p.score = Math.floor(s)
+  })
+
+  showFinalResult()
 })
