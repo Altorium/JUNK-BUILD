@@ -8,6 +8,39 @@ let usedDebug       = false  // 起死回生デバッグを使ったか
 let allFinalScores  = []     // 全プレイヤーの最終スコア記録用
 
 // =====================
+// 諦めスキップ共通処理
+// =====================
+function skipToResult(player) {
+  let assetValue = 0
+  player.hand.forEach(c => { assetValue += (c.cost || 0) })
+  player.score = assetValue * 5
+
+  calcCpuScores()
+  showFinalResult()
+}
+
+// =====================
+// CPUプレイヤーのスコアを一括計算
+// =====================
+function calcCpuScores() {
+  players.forEach((p, i) => {
+    if (i === HUMAN_INDEX) return
+    const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
+    if (!p.build) { p.score = assetValue * 5; return }
+    const { cpu, gpu, memory, motherboard, psu } = p.build
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
+    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
+    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
+
+    let s = benchmark(p.build)
+    s = synergyBonus(s, p.build)
+    s = powerBonus(s, p.build)
+    s = bonus(s, p.build, p.hand)
+    p.score = Math.floor(s)
+  })
+}
+
+// =====================
 // 起動シーケンス開始（ui-draft.jsから呼ばれる）
 // =====================
 function startBoot(player) {
@@ -122,29 +155,7 @@ document.getElementById('btn-debug').addEventListener('click', () => {
 
 // 諦めてスキップ → 大幅減点（手札パーツ資産 × 5）してCPUスコア計算後に最終結果へ
 document.getElementById('btn-skip-benchmark').addEventListener('click', () => {
-  // 手札のコスト合計 × 5 の減点スコア
-  let assetValue = 0
-  bootPlayer.hand.forEach(c => { assetValue += (c.cost || 0) })
-  bootPlayer.score = assetValue * 5
-
-  // CPUプレイヤーのスコアを計算（showBonusScreenと同じロジック）
-  players.forEach((p, i) => {
-    if (i === HUMAN_INDEX) return
-    const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
-    if (!p.build) { p.score = assetValue * 5; return }
-    const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
-    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
-    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
-
-    let s = benchmark(p.build)
-    s = synergyBonus(s, p.build)
-    s = powerBonus(s, p.build)
-    s = bonus(s, p.build, p.hand)
-    p.score = Math.floor(s)
-  })
-
-  showFinalResult()
+  skipToResult(bootPlayer)
 })
 
 // =====================
@@ -315,22 +326,7 @@ function showBonusScreen(player, baseScore) {
 
   document.getElementById('val-final-score').textContent = finalScore.toLocaleString()
 
-  // CPUプレイヤーのスコアも計算
-  players.forEach((p, i) => {
-    if (i === HUMAN_INDEX) return
-    const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
-    if (!p.build) { p.score = assetValue * 5; return }
-    const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
-    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
-    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
-
-    let s = benchmark(p.build)
-    s = synergyBonus(s, p.build)
-    s = powerBonus(s, p.build)
-    s = bonus(s, p.build, p.hand)
-    p.score = Math.floor(s)
-  })
+  calcCpuScores()
 
   document.getElementById('btn-next-player').onclick = () => {
     showFinalResult()
