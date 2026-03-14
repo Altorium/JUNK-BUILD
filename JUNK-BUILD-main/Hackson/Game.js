@@ -172,35 +172,54 @@ function createDeck() {
  * @returns {Card[]} 場札配列
  */
 function createField(deck) {
-  /** @type {Card[]} */
-  const field =[]
+  const field = []
+  const mainParts =["cpu", "gpu", "motherboard", "memory", "psu"]
 
-  /**
-   * 指定タイプのカードを山札から1枚抜き出す
-   * @param {string} type - 抜き出すカードの種類
-   * @returns {Card|null}
-   */
-  const extractCard = (type) => {
+  // 必須パーツを1枚ずつ出す
+  mainParts.forEach(type => {
     const idx = deck.findIndex(c => c.type === type)
     if (idx !== -1) {
-      return deck.splice(idx, 1)[0]
+      field.push(deck.splice(idx, 1)[0])
     }
-    return null
+  })
+
+  // 残りを8枚になるまでランダムに引く
+  while (field.length < 8 && deck.length > 0) {
+    field.push(deck.shift())
   }
 
-  field.push(extractCard("cpu"))
-  field.push(extractCard("gpu"))
-  field.push(extractCard("motherboard"))
-  field.push(extractCard("memory"))
-  field.push(extractCard("psu"))
+  return field
+}
 
-  for (let i = 0; i < 3; i++) {
-    if (deck.length > 0) {
-      field.push(deck.shift())
+function refillField() {
+
+  const mainParts = [
+    "cpu",
+    "gpu",
+    "motherboard",
+    "memory",
+    "psu"
+  ]
+
+  mainParts.forEach(type => {
+
+    const exists = gameState.field.some(c => c.type === type)
+
+    if (!exists && gameState.deck.length > 0) {
+
+      const idx = gameState.deck.findIndex(c => c.type === type)
+
+      if (idx !== -1) {
+        gameState.field.push(gameState.deck.splice(idx,1)[0])
+      }
+      else {
+        gameState.field.push(gameState.deck.shift())
+      }
+
     }
-  }
 
-  return field.filter(c => c !== null)
+  })
+
 }
 
 // =====================
@@ -285,6 +304,9 @@ function initGame() {
 
   const field = createField(deck)
 
+  gameState.field = field
+  refillField()
+
   gameState.players = players
   gameState.deck = deck
   gameState.field = field
@@ -320,9 +342,8 @@ function pickCard(index) {
 
   // 場札から削除し、可能なら山札から補充
   gameState.field.splice(index, 1)
-  if (gameState.deck.length > 0) {
-    gameState.field.push(gameState.deck.shift())
-  }
+
+  refillField()
 
   passTurn()
   checkGameEnd()
@@ -655,6 +676,11 @@ function calculateResult() {
 
   return gameState.players
 }
+
+
+
+
+
 
 
 
