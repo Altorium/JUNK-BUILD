@@ -96,12 +96,13 @@ function showBootResult(success, compatible) {
       ? 'パーツの不具合により起動に失敗しました。'
       : 'パーツの互換性エラーにより起動に失敗しました。'
     document.getElementById('boot-failure-reason').textContent = reason
-    
-//起死回生デバッグ済みなら再挑戦ボタンを隠す
-    if(usedDebug){
+
+    // 起死回生デバッグ済みなら再挑戦ボタンを隠す
+    if (usedDebug) {
       document.getElementById('btn-debug').classList.add('hidden')
-    }else{
+    } else {
       document.getElementById('btn-debug').classList.remove('hidden')
+    }
   }
 }
 
@@ -119,7 +120,7 @@ document.getElementById('btn-debug').addEventListener('click', () => {
   showDebugScreen()
 })
 
-// 諦めてスキップ → スコア0でベンチマークへ
+// 諦めてスキップ → 大幅減点（手札パーツ資産 × 5）してCPUスコア計算後に最終結果へ
 document.getElementById('btn-skip-benchmark').addEventListener('click', () => {
   // 手札のコスト合計 × 5 の減点スコア
   let assetValue = 0
@@ -129,11 +130,12 @@ document.getElementById('btn-skip-benchmark').addEventListener('click', () => {
   // CPUプレイヤーのスコアを計算（showBonusScreenと同じロジック）
   players.forEach((p, i) => {
     if (i === HUMAN_INDEX) return
-    if (!p.build) { p.score = 0; return }
+    const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
+    if (!p.build) { p.score = assetValue * 5; return }
     const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
-    if (!checkCompatibility(p.build)) { p.score = 0; return }
-    if (!reliabilityCheck(p.build))   { p.score = 0; return }
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
+    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
+    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
 
     let s = benchmark(p.build)
     s = synergyBonus(s, p.build)
@@ -316,11 +318,12 @@ function showBonusScreen(player, baseScore) {
   // CPUプレイヤーのスコアも計算
   players.forEach((p, i) => {
     if (i === HUMAN_INDEX) return
-    if (!p.build) { p.score = 0; return }
+    const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
+    if (!p.build) { p.score = assetValue * 5; return }
     const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
-    if (!checkCompatibility(p.build)) { p.score = 0; return }
-    if (!reliabilityCheck(p.build))   { p.score = 0; return }
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
+    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
+    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
 
     let s = benchmark(p.build)
     s = synergyBonus(s, p.build)
