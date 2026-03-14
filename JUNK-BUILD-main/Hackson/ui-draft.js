@@ -334,14 +334,42 @@ function processCpuTurn() {
 // =====================
 // カードを取る共通処理
 // =====================
+// =====================
+// カードを取る共通処理
+// =====================
 function pickCard(playerIndex, card) {
   const player = players[playerIndex]
   player.hand.push(card)
   player.budget -= card.cost
 
+  // 1. 買われたカードを場から削除
   field.splice(field.indexOf(card), 1)
+
+  // 2. 減った分の1枚だけを補充する
   if (deck.length > 0) {
-    field.push(deck.shift())
+    const mainParts =['cpu', 'gpu', 'motherboard', 'memory', 'psu']
+    
+    // 場に足りない必須パーツの種類を探す
+    let missingType = null
+    for (let type of mainParts) {
+      if (!field.some(c => c.type === type)) {
+        missingType = type
+        break // 1枚だけ補充するので、最初に見つかった不足分を優先
+      }
+    }
+
+    if (missingType) {
+      // 不足しているパーツを山札から探す
+      const idx = deck.findIndex(c => c.type === missingType)
+      if (idx !== -1) {
+        field.push(deck.splice(idx, 1)[0]) // 見つかればそれを引く
+      } else {
+        field.push(deck.shift()) // 山札にもう無ければ諦めて一番上から引く
+      }
+    } else {
+      // 全種類の必須パーツが場に揃っている場合は、一番上から引く
+      field.push(deck.shift())
+    }
   }
 }
 
