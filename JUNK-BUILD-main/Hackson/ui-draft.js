@@ -483,26 +483,5 @@ document.getElementById('btn-boot').addEventListener('click', () => {
 // セット画面：パーツ不足で諦めてスキップ
 // =====================
 document.getElementById('btn-set-skip').addEventListener('click', () => {
-  // 手札のコスト合計 × 5 の減点スコア（boot画面のスキップと同じロジック）
-  let assetValue = 0
-  players[HUMAN_INDEX].hand.forEach(c => { assetValue += (c.cost || 0) })
-  players[HUMAN_INDEX].score = assetValue * 5
-
-  // CPUプレイヤーのスコアを計算
-  players.forEach((p, i) => {
-    if (i === HUMAN_INDEX) return
-    if (!p.build) { p.score = 0; return }
-    const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = 0; return }
-    if (!checkCompatibility(p.build)) { p.score = 0; return }
-    if (!reliabilityCheck(p.build))   { p.score = 0; return }
-
-    let s = benchmark(p.build)
-    s = synergyBonus(s, p.build)
-    s = powerBonus(s, p.build)
-    s = bonus(s, p.build, p.hand)
-    p.score = Math.floor(s)
-  })
-
-  showFinalResult()
+  skipToResult(players[HUMAN_INDEX])
 })
