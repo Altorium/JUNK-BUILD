@@ -14,6 +14,35 @@
         <p>PCパーツを集めて最強のマシンを組み立てろ！</p>
         <button id="btn-start" class="btn btn-primary">ゲームスタート</button>
     </div>
+    <!-- 5/15 21:57 追加分-->
+    <!-- ===== ロビー画面 ===== -->
+    <div id="screen-lobby" class="screen hidden">
+        <h2>LOBBY</h2>
+
+        <div id="lobby-name-section">
+            <label for="input-player-name">プレイヤー名</label>
+            <input type="text" id="input-player-name" placeholder="名前を入力（最大10文字）" maxlength="10">
+        </div>
+
+        <div id="lobby-actions">
+            <button id="btn-create-room" class="btn btn-primary">ルームを作成する</button>
+            <div id="lobby-join-section">
+                <input type="text" id="input-room-id" placeholder="ルームID（6文字）" maxlength="6">
+                <button id="btn-join-room" class="btn btn-secondary">参加する</button>
+            </div>
+        </div>
+
+        <div id="lobby-waiting" class="hidden">
+            <div id="lobby-room-id-display">
+                <span>ルームID：</span>
+                <strong id="display-room-id"></strong>
+                <span>（友達に共有してください）</span>
+            </div>
+            <div id="lobby-players"></div>
+            <button id="btn-start-game" class="btn btn-primary hidden">ゲーム開始</button>
+        </div>
+    </div>
+    <!-- 5/15 21:57 追加分ここまで -->
 
     <!-- ===== 準備画面 ===== -->
     <div id="screen-prep" class="screen hidden">
@@ -255,6 +284,10 @@
     </div>
 
     <!-- ===== スクリプト（読み込み順序厳守） ===== -->
+    <!-- 5/17 21:49 追加分 -->
+     <script type="module" src="firebase-config.js"></script>
+     <script type="module" src="lobby.js"></script>
+     <!-- 5/17 21:49 追加分ここまで -->
     <script src="cards.js"></script>
     <script src="game.js"></script>
     <script src="ui-draft.js"></script>
