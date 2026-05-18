@@ -326,7 +326,7 @@ function initGame() {
  * @param {number} index - 取得する場札のインデックス
  * @returns {boolean} 取得に成功した場合はtrue、失敗した場合はfalse
  */
-function pickCard(index) {
+function pickCardLocal(index) {
   if (gameState.gameOver) return false
 
   const player = gameState.players[gameState.turn]
