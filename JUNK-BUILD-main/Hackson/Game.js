@@ -54,7 +54,7 @@ class Player {
     /** @type {number} 残予算 */
     this.budget = budget
     /** @type {Card[]} 手札 */
-    this.hand =[]
+    this.hand = []
     /** @type {Build|null} 最終的な構成 */
     this.build = null
     /** @type {number} 最終スコア */
@@ -62,7 +62,7 @@ class Player {
     /** @type {boolean} 故障フラグ */
     this.broken = false
     /** @type {string} 画面表示用の結果メッセージ */
-    this.resultMessage = "" 
+    this.resultMessage = ""
   }
 }
 
@@ -74,7 +74,7 @@ class Player {
 let gameState = {
   players: [],
   deck: [],
-  field:[],
+  field: [],
   turn: 0,
   event: null,
   gameOver: false
@@ -89,7 +89,7 @@ let gameState = {
  * @returns {string} イベント名
  */
 function generateEvent() {
-  const events =[
+  const events = [
     "gpu_up",
     "memory_up",
     "all_up",
@@ -136,7 +136,7 @@ function shuffle(array) {
   const a = [...array]
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
+      ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
@@ -151,7 +151,7 @@ function shuffle(array) {
  */
 function createDeck() {
   /** @type {Card[]} */
-  let deck =[]
+  let deck = []
 
   Object.values(cards).forEach(list => {
     // 参照渡しを防ぐためディープコピー風に複製
@@ -173,7 +173,7 @@ function createDeck() {
  */
 function createField(deck) {
   const field = []
-  const mainParts =["cpu", "gpu", "motherboard", "memory", "psu"]
+  const mainParts = ["cpu", "gpu", "motherboard", "memory", "psu"]
 
   // 必須パーツを1枚ずつ出す
   mainParts.forEach(type => {
@@ -210,7 +210,7 @@ function refillField() {
       const idx = gameState.deck.findIndex(c => c.type === type)
 
       if (idx !== -1) {
-        gameState.field.push(gameState.deck.splice(idx,1)[0])
+        gameState.field.push(gameState.deck.splice(idx, 1)[0])
       }
       else {
         gameState.field.push(gameState.deck.shift())
@@ -233,7 +233,7 @@ function refillField() {
  * @returns {boolean} 持っていればtrue
  */
 function hasPart(player, type) {
-  const uniqueParts =[
+  const uniqueParts = [
     "cpu",
     "gpu",
     "memory",
@@ -266,17 +266,17 @@ function passTurn() {
 /**
  * ゲームの終了条件を満たしているかチェックする
  */
-function checkGameEnd(){
+function checkGameEnd() {
   const allFull =
     gameState.players.every(
       p => p.hand.length >= 8
     )
-  
+
   // 山札も場札も無くなった場合も終了とする
-  const noCardsLeft = 
+  const noCardsLeft =
     gameState.deck.length === 0 && gameState.field.length === 0
 
-  if(allFull || noCardsLeft){
+  if (allFull || noCardsLeft) {
     gameState.gameOver = true
   }
 }
@@ -290,11 +290,11 @@ function checkGameEnd(){
  * @returns {GameState} 初期化後のゲーム状態
  */
 function initGame() {
-  const players =[
-    new Player("P1", 20),
-    new Player("P2", 20),
-    new Player("P3", 20),
-    new Player("P4", 20)
+  const players = [
+    new Player("P1", 130),
+    new Player("P2", 130),
+    new Player("P3", 130),
+    new Player("P4", 130)
   ]
 
   const deck = createDeck()
@@ -312,7 +312,7 @@ function initGame() {
   gameState.field = field
   gameState.turn = 0
   gameState.event = event
-  gameState.gameOver = false 
+  gameState.gameOver = false
 
   return gameState
 }
@@ -381,7 +381,7 @@ function checkCompatibility(build, playerName) {
   // ③ 電力チェック
   const power = Number(build.cpu.power) + Number(build.gpu.power)
   const capacity = Number(build.psu.capacity)
-  
+
   if (power > capacity) {
     console.log(`❌[${playerName}] 互換性エラー: 電力不足`)
     console.log(`   ├─ 必要電力: ${power}W (CPU: ${build.cpu.power}W + GPU: ${build.gpu.power}W)`)
@@ -409,12 +409,12 @@ function reliabilityCheck(build, playerName) {
     junk: 0.5    // 50%成功
   }
 
-  const parts =[
+  const parts = [
     { label: "CPU", data: build.cpu },
     { label: "GPU", data: build.gpu },
     { label: "Memory", data: build.memory },
     { label: "Motherboard", data: build.motherboard },
-    { label: "PSU", data: build.psu } 
+    { label: "PSU", data: build.psu }
   ]
 
   for (let p of parts) {
@@ -519,7 +519,7 @@ function bonus(score, build, hand) {
   hand.forEach(c => {
     if (c.effect === "5%プラス") {
       multiplier += 0.05;
-    } 
+    }
     else if (c.effect === "さいころをふって1-3なら10%プラス，4-6なら10%マイナス") {
       const dice = Math.floor(Math.random() * 6) + 1;
       if (dice <= 3) {
@@ -568,32 +568,32 @@ function calculateResult() {
     // もしUI側でスキップを選んで build が null になっていたり、パーツが欠けている場合
     if (!build || !build.cpu || !build.gpu || !build.memory || !build.motherboard || !build.psu) {
       console.log("❌ Missing parts または スキップが選択されました")
-      
+
       // メルカリ売却パターン：手札にある全カードのコスト合計 × 10点
       let assetValue = 0;
       player.hand.forEach(c => {
         assetValue += (c.cost || 0);
       });
-      
+
       const junkScore = assetValue * 5;
       console.log(`🔧 【パーツ不足 / スキップ】PCを構築せず、パーツ資産を売却しました。`);
       console.log(`   👉 お情けとして手持ちパーツの資産価値をスコア化... (コスト合計 × 10点)`);
       console.log(`🏆 【${player.name}】最終スコア: ${junkScore}`);
-      
+
       player.score = junkScore;
       // 🌟 画面表示用のメッセージを保存
       player.resultMessage = `【売却】PCの形にならなかったため、パーツ資産として売却しました。\nスコア: ${junkScore}`;
-      return; 
+      return;
     }
 
     // ==========================================
     // ② 互換性・故障チェックの判定をメモする
     // ==========================================
-    let failReason = null; 
+    let failReason = null;
 
     if (!checkCompatibility(build, player.name)) {
       failReason = "互換性エラー";
-    } 
+    }
     else {
       player.broken = !reliabilityCheck(build, player.name);
       if (player.broken) {
@@ -605,7 +605,7 @@ function calculateResult() {
     // ③ エラーが起きていても、とりあえず「本来のスコア」を計算する
     // ==========================================
     let score = benchmark(build)
-    
+
     console.log("--- 📊 ベンチマーク基礎スコア ---")
     console.log(`CPU: ${build.cpu.score || 0} / GPU: ${build.gpu.score || 0}`)
     console.log(`ボトルネック適用後: ${score}`)
@@ -619,7 +619,7 @@ function calculateResult() {
     const power = (build.cpu.power || 0) + (build.gpu.power || 0)
     const marginRate = (build.psu.capacity - power) / build.psu.capacity
     console.log(`🔌 電源使用量: ${power}W / 容量: ${build.psu.capacity}W (余裕: ${Math.floor(marginRate * 100)}%)`)
-    
+
     const beforePower = score
     score = powerBonus(score, build)
     console.log(`⚡ 電源ボーナス適用後: ${score}`)
@@ -627,7 +627,7 @@ function calculateResult() {
     console.log("--- 🎁 その他ボーナス ---")
     console.log(`メモリ容量: ${build.memory.capacity}GB`)
     console.log(`電源品質: ${build.psu.rating}`)
-    
+
     player.hand.forEach(c => {
       if (c.effect) console.log(`🃏 手札エフェクト: ${c.effect}`)
     })
@@ -645,7 +645,7 @@ function calculateResult() {
       score = Math.floor(score * 0.7);
       // 🌟 画面表示用のメッセージを保存
       player.resultMessage = `【互換性エラー】規格が合わず組み立てミス... 本来のスコアの70%を獲得！\n最終スコア: ${score}`;
-    } 
+    }
     else if (failReason === "パーツ故障") {
       console.log("💥 【パーツ故障 ペナルティ】 ジャンクパーツのせいで起動時にショート！");
       console.log("   👉 他のパーツも巻き添えに... 本来のスコアの【30%】までダウン！");
