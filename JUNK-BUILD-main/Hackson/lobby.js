@@ -31,7 +31,7 @@ async function createRoom(){
         players: [{
             id: myUid,
             name: name,
-            budget: 200,
+            budget: 130,
             hand: [],
             build: {},
             score: 0,
@@ -70,7 +70,7 @@ async function joinRoom(){
     const newPlayer = {
         id: myUid,
         name: name,
-        budget: 200,
+        budget: 130,
         hand: [],
         build: {},
         score: 0,

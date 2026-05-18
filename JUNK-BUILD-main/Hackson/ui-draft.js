@@ -128,10 +128,10 @@ document.getElementById('btn-start').addEventListener('click', () => {
 
 function initializePlayers() {
   players = [
-    new Player('あなた', 200),
-    new Player('CPU-A',  200),
-    new Player('CPU-B',  200),
-    new Player('CPU-C',  200),
+    new Player('あなた', 130),
+    new Player('CPU-A',  130),
+    new Player('CPU-B',  130),
+    new Player('CPU-C',  130),
   ]
 }
 
