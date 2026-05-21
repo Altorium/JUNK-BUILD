@@ -183,7 +183,7 @@ function createField(deck) {
     }
   })
 
-  // 残りを8枚になるまでランダムに引く
+  // 残りを10枚になるまでランダムに引く
   while (field.length < 10 && deck.length > 0) {
     field.push(deck.shift())
   }
@@ -326,7 +326,7 @@ function initGame() {
  * @param {number} index - 取得する場札のインデックス
  * @returns {boolean} 取得に成功した場合はtrue、失敗した場合はfalse
  */
-function pickCard(index) {
+function pickCardLocal(index) {
   if (gameState.gameOver) return false
 
   const player = gameState.players[gameState.turn]
