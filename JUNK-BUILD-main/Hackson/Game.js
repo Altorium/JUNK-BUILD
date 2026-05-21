@@ -184,7 +184,7 @@ function createField(deck) {
   })
 
   // 残りを8枚になるまでランダムに引く
-  while (field.length < 8 && deck.length > 0) {
+  while (field.length < 10 && deck.length > 0) {
     field.push(deck.shift())
   }
 
