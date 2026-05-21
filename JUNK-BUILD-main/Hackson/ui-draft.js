@@ -1,9 +1,9 @@
 // ui-draft.js
-
+import { initSync, watchGameState, stopGameState, pickCard, skipTurn } from './sync.js';
 // =====================
 // 画面切り替え（全体共通）
 // =====================
-function showScreen(id) {
+export function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'))
   document.getElementById(id).classList.remove('hidden')
 }
@@ -11,34 +11,53 @@ function showScreen(id) {
 // =====================
 // ゲーム状態
 // =====================
-let players = []
-let deck    = []
-let field   = []
+export let players = []
+export let deck = []
+let field = []
 
 // ドラフト管理
-let draftOrder      = [0, 1, 2, 3]
+let draftOrder = [0, 1, 2, 3]
 let draftOrderIndex = 0
-let draftRound      = 1
-let selectedCard    = null
+let draftRound = 1
+let selectedCard = null
 
 // セットフェーズ管理
-let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
+export let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
 
 // 高騰イベント（準備画面で決定し、デッキ生成後に適用する）
 let currentEvent = null
 
-const HUMAN_INDEX = 0   // P1が人間
+const HUMAN_INDEX = 0   // P1が人間（ソロモード用）
 const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
+
+export let myUid = null      // null=ソロモード、UIDあり=オンラインモード
+let onlineTurn = 0         // Firestoreから来るturn（オンラインのみ使用）
+let onlineDraftRound = 1   // Firestoreから来るdraftRound（オンラインのみ使用）
+
+// 「自分」のプレイヤーインデックスを返す
+export function getMyIndex() {
+  if (myUid === null) return HUMAN_INDEX
+  return players.findIndex(p => p.id === myUid)
+}
+
+// オンライン時、Firestoreから受け取った全プレイヤーで上書きする
+export function setPlayers(p) { players = p }
+
+// 「今のターン」のプレイヤーインデックスを返す
+function getCurrentTurnIndex() {
+  if (myUid === null) return draftOrder[draftOrderIndex]
+  return onlineTurn
+}
 
 // =====================
 // カードのカテゴリ判定
 // =====================
-function getCardType(card) {
-  if (card.socket && card.score !== undefined)                        return 'CPU'
-  if (card.score !== undefined && !card.socket)                       return 'GPU'
+export function getCardType(card) {
+  if (card.socket && card.score !== undefined) return 'CPU'
+  if (card.score !== undefined && !card.socket) return 'GPU'
   if (card.memoryType && card.capacity !== undefined && !card.socket) return 'MEM'
-  if (card.memoryType && card.socket)                                 return 'MB'
-  if (card.rating !== undefined)                                      return 'PSU'
+  if (card.memoryType && card.socket) return 'MB'
+  if (card.rating !== undefined) return 'PSU'
   return 'SUP'
 }
 
@@ -48,16 +67,16 @@ function getCardType(card) {
 function buildStatsHTML(card) {
   const type = getCardType(card)
   let html = ''
-  if (card.score !== undefined)    html += row('スコア',   card.score.toLocaleString())
-  if (card.power !== undefined)    html += row('消費電力', card.power + 'W')
-  if (card.socket)                 html += row('ソケット', card.socket)
-  if (card.memoryType)             html += row('規格',     card.memoryType)
+  if (card.score !== undefined) html += row('スコア', card.score.toLocaleString())
+  if (card.power !== undefined) html += row('消費電力', card.power + 'W')
+  if (card.socket) html += row('ソケット', card.socket)
+  if (card.memoryType) html += row('規格', card.memoryType)
   if (card.capacity !== undefined) {
     const unit = (type === 'PSU') ? 'W' : 'GB'
     html += row('容量', card.capacity + unit)
   }
-  if (card.rating)                 html += row('認証',     card.rating)
-  if (card.effect)                 html += row('効果',     card.effect)
+  if (card.rating) html += row('認証', card.rating)
+  if (card.effect) html += row('効果', card.effect)
   return html
 }
 
@@ -69,15 +88,15 @@ function row(label, value) {
 // カード要素の生成
 // =====================
 const cardTypeImageMap = {
-  cpu:         'images/computer_cpu.png',
-  gpu:         'images/computer_gpu.png',
-  memory:      'images/computer_memory.png',
+  cpu: 'images/computer_cpu.png',
+  gpu: 'images/computer_gpu.png',
+  memory: 'images/computer_memory.png',
   motherboard: 'images/computer_motherboard.png',
-  psu:         'images/computer_dengen_unit.png',
-  support:     'images/computer_support.png'
+  psu: 'images/computer_dengen_unit.png',
+  support: 'images/computer_support.png'
 }
 
-function createCardEl(card) {
+export function createCardEl(card) {
   const el = document.createElement('div')
   el.className = 'card'
 
@@ -129,9 +148,9 @@ document.getElementById('btn-start').addEventListener('click', () => {
 function initializePlayers() {
   players = [
     new Player('あなた', 130),
-    new Player('CPU-A',  130),
-    new Player('CPU-B',  130),
-    new Player('CPU-C',  130),
+    new Player('CPU-A', 130),
+    new Player('CPU-B', 130),
+    new Player('CPU-C', 130),
   ]
 }
 
@@ -151,10 +170,10 @@ function renderPrepScreen() {
   currentEvent = generateEvent()
 
   const eventLabels = {
-    gpu_up:    'グラボ高騰：全GPUカードのコストが上昇',
+    gpu_up: 'グラボ高騰：全GPUカードのコストが上昇',
     memory_up: 'メモリ高騰：全メモリカードのコストが上昇',
-    all_up:    '半導体不足：全パーツのコストが上昇',
-    none:      'イベントなし：通常価格のまま'
+    all_up: '半導体不足：全パーツのコストが上昇',
+    none: 'イベントなし：通常価格のまま'
   }
   document.getElementById('event-display').textContent = eventLabels[currentEvent] ?? currentEvent
 }
@@ -163,10 +182,10 @@ document.getElementById('btn-to-draft').addEventListener('click', () => {
   deck = createDeck()
   applyEvent(currentEvent, deck)
   field = createField(deck)
-  draftOrder      = [0, 1, 2, 3]
+  draftOrder = [0, 1, 2, 3]
   draftOrderIndex = 0
-  draftRound      = 1
-  selectedCard    = null
+  draftRound = 1
+  selectedCard = null
 
   renderDraftScreen()
   showScreen('screen-draft')
@@ -176,25 +195,27 @@ document.getElementById('btn-to-draft').addEventListener('click', () => {
 // ドラフト画面：描画
 // =====================
 function renderDraftScreen() {
-  const currentIndex  = draftOrder[draftOrderIndex]
+  const currentIndex = getCurrentTurnIndex()
   const currentPlayer = players[currentIndex]
-  const isHuman       = currentIndex === HUMAN_INDEX
+  const myIndex = getMyIndex()
+  const isMyTurn = currentIndex === myIndex
 
   document.getElementById('draft-current-player').textContent =
-    isHuman ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
-  document.getElementById('draft-round').textContent         = `ラウンド ${draftRound}`
-  document.getElementById('draft-budget-amount').textContent = `¥${players[HUMAN_INDEX].budget}`
+    isMyTurn ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
+  const currentRound = myUid !== null ? onlineDraftRound : draftRound
+  document.getElementById('draft-round').textContent = `ラウンド ${currentRound}`
+  document.getElementById('draft-budget-amount').textContent = `¥${players[myIndex].budget}`
 
-  renderField(currentPlayer, isHuman)
-  renderHand()
-  renderOtherPlayers()
+  renderField(currentPlayer, isMyTurn)
+  renderHand(myIndex)
+  renderOtherPlayers(myIndex)
 
   selectedCard = null
   document.getElementById('selected-card-preview').textContent = ''
   updatePickButton()
 
-  // CPUターンなら自動処理
-  if (!isHuman) {
+  // ソロモードのみCPU自動処理
+  if (!isMyTurn && myUid === null) {
     setTimeout(processCpuTurn, CPU_DELAY_MS)
   }
 }
@@ -219,15 +240,15 @@ function renderField(currentPlayer, isHuman) {
   })
 
   const skipBtn = document.getElementById('btn-skip-turn')
-  if (isHuman && !canAffordAny){
+  if (isHuman && !canAffordAny) {
     skipBtn.classList.remove('hidden')
   } else {
     skipBtn.classList.add('hidden')
   }
 }
 
-function renderHand() {
-  const human     = players[HUMAN_INDEX]
+function renderHand(myIndex = HUMAN_INDEX) {
+  const human = players[myIndex]
   const container = document.getElementById('hand-cards')
   container.innerHTML = ''
   document.getElementById('hand-count').textContent = human.hand.length
@@ -238,12 +259,12 @@ function renderHand() {
   })
 }
 
-function renderOtherPlayers() {
+function renderOtherPlayers(myIndex = HUMAN_INDEX) {
   const container = document.getElementById('other-players-info')
   container.innerHTML = ''
 
   players.forEach((p, i) => {
-    if (i === HUMAN_INDEX) return
+    if (i === myIndex) return
     const span = document.createElement('span')
     span.textContent = `${p.name}: ${p.hand.length}枚`
     container.appendChild(span)
@@ -270,21 +291,31 @@ function updatePickButton() {
   document.getElementById('btn-pick-card').disabled = (selectedCard === null)
 }
 
-document.getElementById('btn-pick-card').addEventListener('click', () => {
+document.getElementById('btn-pick-card').addEventListener('click', async () => {
   if (!selectedCard) return
-  pickCard(HUMAN_INDEX, selectedCard)
-  nextDraftTurn()
+  if (myUid !== null) {
+    const fieldIndex = field.indexOf(selectedCard)
+    await pickCard(fieldIndex)         // オンライン：Firestoreを更新
+  } else {
+    const currentIndex = getCurrentTurnIndex()
+    pickCardLocal(currentIndex, selectedCard)  // ソロ：ローカル処理
+    nextDraftTurn()
+  }
 })
 
-document.getElementById('btn-skip-turn').addEventListener('click', () => {
-  nextDraftTurn()
+document.getElementById('btn-skip-turn').addEventListener('click', async () => {
+  if (myUid !== null) {
+    await skipTurn()   // オンライン：Firestoreのturnを進める
+  } else {
+    nextDraftTurn()    // ソロ：ローカルで次のターンへ
+  }
 })
 
 // =====================
 // ドラフト：CPUの自動ピック
 // =====================
 function processCpuTurn() {
-  const currentIndex  = draftOrder[draftOrderIndex]
+  const currentIndex = draftOrder[draftOrderIndex]
   const currentPlayer = players[currentIndex]
 
   const uniqueTypes = ['cpu', 'gpu', 'memory', 'motherboard', 'psu']
@@ -298,7 +329,7 @@ function processCpuTurn() {
 
   // 互換性の絞り込み
   const heldCpu = currentPlayer.hand.find(c => c.type === 'cpu')
-  const heldMb  = currentPlayer.hand.find(c => c.type === 'motherboard')
+  const heldMb = currentPlayer.hand.find(c => c.type === 'motherboard')
 
   let available = baseAvailable.filter(c => {
     // マザーボード：手持ちCPUのソケットに合うもの
@@ -327,49 +358,21 @@ function processCpuTurn() {
     return (card.score ?? 0) > (best.score ?? 0) ? card : best
   }, available[0])
 
-  pickCard(currentIndex, pick)
+  pickCardLocal(currentIndex, pick)
   nextDraftTurn()
 }
 
 // =====================
 // カードを取る共通処理
 // =====================
-// =====================
-// カードを取る共通処理
-// =====================
-function pickCard(playerIndex, card) {
+function pickCardLocal(playerIndex, card) {
   const player = players[playerIndex]
   player.hand.push(card)
   player.budget -= card.cost
 
-  // 1. 買われたカードを場から削除
   field.splice(field.indexOf(card), 1)
-
-  // 2. 減った分の1枚だけを補充する
   if (deck.length > 0) {
-    const mainParts =['cpu', 'gpu', 'motherboard', 'memory', 'psu']
-    
-    // 場に足りない必須パーツの種類を探す
-    let missingType = null
-    for (let type of mainParts) {
-      if (!field.some(c => c.type === type)) {
-        missingType = type
-        break // 1枚だけ補充するので、最初に見つかった不足分を優先
-      }
-    }
-
-    if (missingType) {
-      // 不足しているパーツを山札から探す
-      const idx = deck.findIndex(c => c.type === missingType)
-      if (idx !== -1) {
-        field.push(deck.splice(idx, 1)[0]) // 見つかればそれを引く
-      } else {
-        field.push(deck.shift()) // 山札にもう無ければ諦めて一番上から引く
-      }
-    } else {
-      // 全種類の必須パーツが場に揃っている場合は、一番上から引く
-      field.push(deck.shift())
-    }
+    field.push(deck.shift())
   }
 }
 
@@ -398,25 +401,25 @@ function nextDraftTurn() {
 // セットフェーズ開始
 // =====================
 function startSetPhase() {
-  // CPUプレイヤーはautoBuildで自動組み立て
-  players.forEach((p, i) => {
-    if (i !== HUMAN_INDEX) {
-      p.build = autoBuild(p.hand)
-    }
-  })
+  const myIndex = getMyIndex()
 
-  // 人間プレイヤーのセット画面へ
+  // ソロモードのみCPUプレイヤーを自動組み立て
+  if (myUid === null) {
+    players.forEach((p, i) => {
+      if (i !== myIndex) p.build = autoBuild(p.hand)
+    })
+  }
+
   currentBuild = { cpu: null, gpu: null, memory: null, motherboard: null, psu: null }
-  document.getElementById('set-player-name').textContent = players[HUMAN_INDEX].name
+  document.getElementById('set-player-name').textContent = players[myIndex].name
 
-  renderSetHand()
+  renderSetHand(myIndex)
   clearSlots()
   document.getElementById('compatibility-check-result').textContent = ''
   document.getElementById('btn-boot').disabled = true
 
-  // 必須パーツが揃えられない場合はスキップボタンを表示
   const required = ['CPU', 'GPU', 'MEM', 'MB', 'PSU']
-  const hand = players[HUMAN_INDEX].hand
+  const hand = players[myIndex].hand
   const canBuild = required.every(t => hand.some(c => getCardType(c) === t))
   document.getElementById('btn-set-skip').classList.toggle('hidden', canBuild)
 
@@ -426,14 +429,14 @@ function startSetPhase() {
 // =====================
 // セット画面：手札描画
 // =====================
-function renderSetHand() {
-  const player    = players[HUMAN_INDEX]
+function renderSetHand(myIndex = HUMAN_INDEX) {
+  const player = players[myIndex]
   const container = document.getElementById('set-hand-cards')
   container.innerHTML = ''
 
   player.hand.forEach(card => {
-    const el      = createCardEl(card)
-    const type    = getCardType(card)
+    const el = createCardEl(card)
+    const type = getCardType(card)
     const slotKey = typeToSlotKey(type)
 
     if (slotKey) {
@@ -446,7 +449,7 @@ function renderSetHand() {
   })
 }
 
-function typeToSlotKey(type) {
+export function typeToSlotKey(type) {
   const map = { CPU: 'cpu', GPU: 'gpu', MEM: 'memory', MB: 'motherboard', PSU: 'psu' }
   return map[type] ?? null
 }
@@ -461,7 +464,7 @@ function onSetCardClick(card, el, slotKey) {
   }
 
   currentBuild[slotKey] = card
-  el.style.opacity       = '0.35'
+  el.style.opacity = '0.35'
   el.style.pointerEvents = 'none'
 
   updateSlotDisplay(slotKey, card)
@@ -471,7 +474,7 @@ function onSetCardClick(card, el, slotKey) {
 function restoreCardToHand(card) {
   document.querySelectorAll('#set-hand-cards .card').forEach(el => {
     if (el.querySelector('.card-name')?.textContent === card.name) {
-      el.style.opacity       = ''
+      el.style.opacity = ''
       el.style.pointerEvents = ''
     }
   })
@@ -498,18 +501,26 @@ function checkAllSlotsFilled() {
   document.getElementById('btn-boot').disabled = !allFilled
 }
 
-// =====================
-// PCを起動する
-// =====================
-document.getElementById('btn-boot').addEventListener('click', () => {
-  players[HUMAN_INDEX].build = { ...currentBuild }
-  // ui-boot.js に制御を渡す
-  startBoot(players[HUMAN_INDEX])
-})
 
-// =====================
-// セット画面：パーツ不足で諦めてスキップ
-// =====================
-document.getElementById('btn-set-skip').addEventListener('click', () => {
-  skipToResult(players[HUMAN_INDEX])
-})
+export function startOnlineGame(uid) {
+  myUid = uid
+  watchGameState((room) => {
+    players = room.players
+    field = room.field
+    deck = room.deck
+    onlineTurn = room.turn
+    onlineDraftRound = room.draftRound || 1
+
+    // ラウンド8終了 or 全員8枚でドラフト終了
+    const roundOver = onlineDraftRound > 8
+    const allHaveCards = room.players.every(p => p.hand.length >= 8)
+    if (roundOver || allHaveCards) {
+      stopGameState()
+      startSetPhase()
+      return
+    }
+
+    renderDraftScreen()
+    showScreen('screen-draft')
+  })
+}
