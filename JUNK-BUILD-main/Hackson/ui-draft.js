@@ -502,9 +502,23 @@ function checkAllSlotsFilled() {
 }
 
 
+const EVENT_LABELS = {
+  gpu_up: 'グラボ高騰：全GPUカードのコストが上昇',
+  memory_up: 'メモリ高騰：全メモリカードのコストが上昇',
+  all_up: '半導体不足：全パーツのコストが上昇',
+  none: 'イベントなし：通常価格のまま'
+}
+
 export function startOnlineGame(uid) {
   myUid = uid
+  document.getElementById('btn-to-draft').classList.add('hidden')
+
+  let prepScreenShown = false
+
   watchGameState((room) => {
+    // ゲーム状態がFirestoreにまだ書き込まれていない場合は待つ
+    if (!room.field || !room.deck) return
+
     players = room.players
     field = room.field
     deck = room.deck
@@ -517,6 +531,25 @@ export function startOnlineGame(uid) {
     if (roundOver || allHaveCards) {
       stopGameState()
       startSetPhase()
+      return
+    }
+
+    // 初回のみ：準備画面にイベントと予算を表示し、3秒後にドラフトへ
+    if (!prepScreenShown) {
+      prepScreenShown = true
+      document.getElementById('event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? ''
+      const budgetList = document.getElementById('budget-list')
+      budgetList.innerHTML = ''
+      room.players.forEach(p => {
+        const div = document.createElement('div')
+        div.className = 'budget-row'
+        div.innerHTML = `<span>${p.name}</span><span class="amount">¥${p.budget}</span>`
+        budgetList.appendChild(div)
+      })
+      setTimeout(() => {
+        renderDraftScreen()
+        showScreen('screen-draft')
+      }, 3000)
       return
     }
 
