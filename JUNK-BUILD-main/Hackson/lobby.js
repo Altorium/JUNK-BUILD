@@ -24,6 +24,8 @@ async function createRoom() {
     const name = document.getElementById("input-player-name").value.trim(); //trimは末尾や先頭の不要なものを削除　スペースや改行
     if (!name) { alert("名前を入力してください"); return; }
 
+    document.getElementById("btn-create-room").disabled = true;
+
     myUid = await loginAnonymously();
     isHost = true;
     currentRoomId = generateRoomId();
@@ -61,32 +63,37 @@ async function joinRoom() {
     if (!name) { alert("名前を入力してください"); return; }
     if (roomId.length !== 6) { alert("ルームIDは6文字です"); return; } //roomId.length(roomIdの文字数)が !== 6　(6でないとき)
 
+    // ボタンを無効化して連打防止
+    const joinBtn = document.getElementById("btn-join-room");
+    joinBtn.disabled = true;
+
     myUid = await loginAnonymously();
     currentRoomId = roomId;
 
     const roomRef = doc(db, "rooms", roomId); // 参加したいルームのパス
     const roomSnap = await getDoc(roomRef); //そのルームが実際に存在するか確認、さっきsetDocしたものをgetDocする
 
-    if (!roomSnap.exists()) { alert("ルームが見つかりません"); return; }
+    if (!roomSnap.exists()) { alert("ルームが見つかりません"); joinBtn.disabled = false; return; }
 
     const currentPlayers = roomSnap.data().players; //取得したルームデータの中身を取り出す
-    if (currentPlayers.length >= 4) { alert("ルームが満員です"); return; }
+    if (currentPlayers.length >= 4) { alert("ルームが満員です"); joinBtn.disabled = false; return; }
 
-    const newPlayer = {
-        id: myUid,
-        name: name,
-        budget: 130,
-        hand: [],
-        build: {},
-        score: 0,
-        broken: false,
-        ready: false
-    };
-
-
-    await updateDoc(roomRef, {
-        players: arrayUnion(newPlayer)
-    });
+    // 同じUIDが既に参加済みなら再追加しない（ページリロード等の対策）
+    if (!currentPlayers.some(p => p.id === myUid)) {
+        const newPlayer = {
+            id: myUid,
+            name: name,
+            budget: 130,
+            hand: [],
+            build: {},
+            score: 0,
+            broken: false,
+            ready: false
+        };
+        await updateDoc(roomRef, {
+            players: arrayUnion(newPlayer)
+        });
+    }
 
     document.getElementById("lobby-waiting").classList.remove("hidden");
     document.getElementById("lobby-actions").classList.add("hidden");
@@ -130,7 +137,7 @@ async function hostStartGame() {
     await updateDoc(roomRef, { status: "playing" });
 }
 
-function startGame(room) {
+async function startGame(room) {
     document.getElementById("screen-lobby").classList.add("hidden");
     document.getElementById("screen-prep").classList.remove("hidden");
 
@@ -150,7 +157,8 @@ function startGame(room) {
             broken: false
         }));
 
-        updateGameState({
+        // await で書き込み完了を待つ（完了前にwatchGameStateが発火しないよう順序保証）
+        await updateGameState({
             deck: state.deck,
             field: state.field,
             turn: state.turn,
@@ -160,7 +168,7 @@ function startGame(room) {
             draftRound: 1
         });
     }
-    
+
     startOnlineGame(myUid);
 }
 
