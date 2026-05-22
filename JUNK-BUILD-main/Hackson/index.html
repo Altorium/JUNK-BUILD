@@ -12,7 +12,8 @@
     <div id="screen-title" class="screen">
         <h1>JUNK BUILD</h1>
         <p>PCパーツを集めて最強のマシンを組み立てろ！</p>
-        <button id="btn-start" class="btn btn-primary">ゲームスタート</button>
+        <button id="btn-start" class="btn btn-primary">ひとりで遊ぶ（CPU対戦）</button>
+        <button id="btn-online" class="btn btn-secondary">オンラインで遊ぶ</button><!-- 5/18 追加分 -->
     </div>
     <!-- 5/15 21:57 追加分-->
     <!-- ===== ロビー画面 ===== -->
@@ -179,6 +180,7 @@
     <div id="screen-debug" class="screen hidden">
         <h2>起死回生デバッグ</h2>
         <p>山札から1枚追加ドロー！もう一度PCを組み直せ！</p>
+
         <div id="debug-layout">
             <!-- 手札一覧 -->
             <div id="debug-hand">
@@ -213,6 +215,7 @@
                 </div>
             </div>
         </div>
+
         <p class="warning-text">※起動成功しても、ベンチマークスコアにペナルティが課されます</p>
         <button id="btn-debug-boot" class="btn btn-warning">再起動</button>
     </div>
@@ -265,7 +268,7 @@
             <span id="val-final-score">0</span>
         </div>
 
-        <button id="btn-next-player" class="btn btn-primary">最終結果画面へ</button>
+        <button id="btn-next-player" class="btn btn-primary">最終結果画面へ </button>
     </div>
 
     <!-- ===== 最終結果画面 ===== -->
@@ -284,18 +287,16 @@
     </div>
 
     <!-- ===== スクリプト（読み込み順序厳守） ===== -->
-    <!-- 5/17 21:49 追加分 -->
+     <!-- 5/17 21:49 追加分 -->
      <script type="module" src="firebase-config.js"></script>
      <script type="module" src="lobby.js"></script>
      <!-- 5/17 21:49 追加分ここまで -->
+    
     <script src="cards.js"></script>
-    <script src="game.js"></script>
+    <script src="Game.js"></script>
     <!-- 5/18 21:38 追加分 -->
     <script type="module" src="ui-draft.js"></script>
     <!-- 5/18 21:38 追加分ここまで -->
     <script type="module" src="ui-boot.js"></script>
 </body>
 </html>
-
-
-
