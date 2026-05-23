@@ -1,4 +1,10 @@
 // ui-boot.js
+import {
+  players, deck, currentBuild, getMyIndex,
+  showScreen, createCardEl, getCardType, typeToSlotKey
+} from './ui-draft.js'
+
+const HUMAN_INDEX = 0
 
 // =====================
 // 状態
@@ -365,6 +371,18 @@ function showFinalResult() {
 
   document.getElementById('winner-name').textContent = ranking[0].name
 }
+
+// =====================
+// PC組み立て → 起動
+// =====================
+document.getElementById('btn-boot').addEventListener('click', () => {
+  players[getMyIndex()].build = { ...currentBuild }
+  startBoot(players[getMyIndex()])
+})
+
+document.getElementById('btn-set-skip').addEventListener('click', () => {
+  skipToResult(players[getMyIndex()])
+})
 
 // =====================
 // もう一度遊ぶ
