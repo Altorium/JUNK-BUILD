@@ -1,0 +1,848 @@
+diff --git a/public/index.html b/public/index.html
+index 63516f7..4739cd0 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -70,43 +70,72 @@
+ 
+     <!-- ===== ドラフト画面 ===== -->
+     <div id="screen-draft" class="screen hidden">
+-        <div id="draft-header">
+-            <div id="draft-turn-info">
+-                <span id="draft-current-player">プレイヤー1のターン</span>
+-                <span id="draft-round">ラウンド 1</span>
+-            </div>
+-            <div id="draft-budget-display">
+-                所持金: <span id="draft-budget-amount">¥0</span>
+-            </div>
++      <div id="draft-board">
++
++        <!-- 左上：ラウンド数 -->
++        <div id="draft-corner-tl">
++          <span class="corner-label">ROUND</span>
++          <span id="draft-round">1</span>
+         </div>
+ 
+-        <!-- 場のカード（8枚） -->
+-        <div id="draft-field">
+-            <h3>場のカード</h3>
+-            <div id="field-cards">
+-                <!-- ui-draft.jsが動的に生成 -->
+-            </div>
++        <!-- 上：対戦相手の手札 -->
++        <div id="opponent-top" class="opponent-zone hidden">
++          <div class="opp-hand-cards"></div>
++          <div class="opponent-info">
++            <span class="opp-name"></span>
++          </div>
+         </div>
+ 
+-        <!-- 手札 -->
+-        <div id="draft-hand">
+-            <h3>あなたの手札 (<span id="hand-count">0</span>/8枚)</h3>
+-            <div id="hand-cards">
+-                <!-- ui-draft.jsが動的に生成 -->
+-            </div>
++        <!-- 右上：市場イベント -->
++        <div id="draft-corner-tr">
++          <span class="corner-label">市場イベント</span>
++          <span id="draft-event-display">-</span>
+         </div>
+ 
+-        <!-- 他プレイヤーの手札枚数 -->
+-        <div id="other-players-info">
+-            <!-- ui-draft.jsが動的に生成 -->
++        <!-- 左：対戦相手の手札 -->
++        <div id="opponent-left" class="opponent-zone hidden">
++          <div class="opp-hand-cards"></div>
++          <div class="opponent-info">
++            <span class="opp-name"></span>
++          </div>
+         </div>
+ 
+-        <!-- カード選択確定ボタン -->
+-        <div id="draft-actions">
++        <!-- 中央：場のカード -->
++        <div id="draft-center">
++          <div id="field-effect-text"></div>
++          <div id="field-cards"></div>
++          <div id="field-announce-text"></div>
++          <div id="draft-actions">
+             <div id="selected-card-preview"></div>
+             <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
+-            <button id="btn-skip-turn" class="btn btn-secondary">スキップ</button>
++          </div>
++        </div>
++
++        <!-- 右：対戦相手の手札 -->
++        <div id="opponent-right" class="opponent-zone hidden">
++          <div class="opp-hand-cards"></div>
++          <div class="opponent-info">
++            <span class="opp-name"></span>
++          </div>
+         </div>
++
++        <!-- 左下：自分の所持金 -->
++        <div id="draft-corner-bl">
++          <span class="corner-label">所持金</span>
++          <span id="draft-budget-amount">¥130</span>
++        </div>
++
++        <!-- 下：自分の手札 -->
++        <div id="my-hand-zone">
++          <div id="hand-cards"></div>
++        </div>
++
++        <!-- 右下：SKIPボタン -->
++        <div id="draft-corner-br">
++          <button id="btn-skip-turn" class="btn btn-secondary hidden">SKIP</button>
++        </div>
++
++      </div>
+     </div>
+ 
+     <!-- ===== セット画面（PC組み立て） ===== -->
+diff --git a/public/lobby.js b/public/lobby.js
+index 1aa4f76..96536fe 100644
+--- a/public/lobby.js
++++ b/public/lobby.js
+@@ -169,7 +169,7 @@ async function startGame(room) {
+         });
+     }
+ 
+-    startOnlineGame(myUid);
++    startOnlineGame(myUid, isHost);
+ }
+ 
+ document.getElementById("btn-online").addEventListener("click", () => {
+diff --git a/public/style.css b/public/style.css
+index 977290d..ca0931e 100644
+--- a/public/style.css
++++ b/public/style.css
+@@ -1,31 +1,33 @@
+ /* =====================
+-   CSS変数（テーマ設定）
+-   ここを変えるだけで全体の色が変わる
++   CSS変数（ホログラフィック・サイバーテーマ）
+    ===================== */
+ html {
+   zoom: 1.25;
+ }
+ 
+ :root {
+-  --bg-primary:    #0a0f0a;
+-  --bg-secondary:  #111a11;
+-  --bg-card:       #152015;
+-  --bg-card-hover: #1e2e1e;
++  --bg-primary:    #030b18;
++  --bg-secondary:  #06152a;
++  --bg-card:       #071e38;
++  --bg-card-hover: #0b2a4e;
+ 
+-  --accent:        #00e676;
+-  --accent-dim:    #00994d;
+-  --accent-glow:   rgba(0, 230, 118, 0.25);
++  --accent:        #00d4ff;
++  --accent-dim:    #0088bb;
++  --accent-glow:   rgba(0, 212, 255, 0.22);
+ 
+-  --text-primary:  #e8f5e9;
+-  --text-secondary:#7fa07f;
+-  --text-muted:    #4a604a;
++  --accent2:       #00ff99;
++  --accent2-glow:  rgba(0, 255, 153, 0.18);
+ 
+-  --border:        #1e3a1e;
+-  --border-accent: #00e676;
++  --text-primary:  #d8f0ff;
++  --text-secondary:#5a9ab8;
++  --text-muted:    #2a4a5e;
+ 
+-  --danger:        #ff3d3d;
+-  --warning:       #ffa726;
+-  --success:       #00e676;
++  --border:        #0a2540;
++  --border-accent: #00d4ff;
++
++  --danger:        #ff4466;
++  --warning:       #ffaa00;
++  --success:       #00ff99;
+ 
+   --font-main:     'Courier New', Courier, monospace;
+ }
+@@ -41,6 +43,10 @@ html {
+ 
+ body {
+   background-color: var(--bg-primary);
++  background-image:
++    linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
++    linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
++  background-size: 48px 48px;
+   color: var(--text-primary);
+   font-family: var(--font-main);
+   min-height: 100vh;
+@@ -68,8 +74,8 @@ body {
+ h1 {
+   font-size: 3rem;
+   color: var(--accent);
+-  text-shadow: 0 0 20px var(--accent-glow);
+-  letter-spacing: 0.2em;
++  text-shadow: 0 0 24px var(--accent), 0 0 60px var(--accent-glow);
++  letter-spacing: 0.25em;
+   text-transform: uppercase;
+ }
+ 
+@@ -79,7 +85,8 @@ h2 {
+   border-bottom: 1px solid var(--border-accent);
+   padding-bottom: 8px;
+   margin-bottom: 16px;
+-  letter-spacing: 0.1em;
++  letter-spacing: 0.12em;
++  text-shadow: 0 0 12px var(--accent-glow);
+ }
+ 
+ h3 {
+@@ -136,31 +143,83 @@ h3 {
+   background: rgba(127, 160, 127, 0.1);
+ }
+ 
++/* =====================
++   カード出現アニメーション
++   ===================== */
++@keyframes card-appear {
++  from {
++    opacity: 0;
++    transform: translateY(16px) scale(0.9);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0) scale(1);
++  }
++}
++
++.card-appear {
++  animation: card-appear 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
++}
++
+ /* =====================
+    カード（共通）
+    ===================== */
+ .card {
+   background: var(--bg-card);
++  background-image: linear-gradient(160deg, rgba(0,212,255,0.07) 0%, transparent 55%);
+   border: 1px solid var(--border);
++  border-radius: 8px;
+   width: 130px;
+   min-height: 180px;
+   padding: 8px;
+   cursor: pointer;
+-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
++  transition: border-color 0.2s, box-shadow 0.2s, transform 0.18s, opacity 0.15s;
+   position: relative;
+   display: flex;
+   flex-direction: column;
+   gap: 4px;
++  overflow: hidden;
++  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,212,255,0.08);
++}
++
++/* 光沢シェーン（常時うっすら、ホバーで強く走る） */
++.card::after {
++  content: '';
++  position: absolute;
++  inset: 0;
++  border-radius: 8px;
++  background: linear-gradient(
++    115deg,
++    transparent 25%,
++    rgba(255,255,255,0.06) 45%,
++    rgba(0,212,255,0.12) 50%,
++    rgba(255,255,255,0.06) 55%,
++    transparent 75%
++  );
++  background-size: 300% 300%;
++  background-position: 150% 150%;
++  transition: background-position 0.5s ease;
++  pointer-events: none;
+ }
+ 
+ .card:hover {
+-  background: var(--bg-card-hover);
+   border-color: var(--accent-dim);
++  box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 12px var(--accent-glow), inset 0 0 0 1px rgba(0,212,255,0.2);
++  transform: translateY(-4px);
++}
++
++.card:hover::after {
++  background-position: 0% 0%;
+ }
+ 
+ .card.selected {
+   border-color: var(--accent);
+-  box-shadow: 0 0 12px var(--accent-glow);
++  box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px var(--accent), 0 0 50px var(--accent-glow);
++  transform: translateY(-5px);
++}
++
++.card.selected::after {
++  background-position: 0% 0%;
+ }
+ 
+ .card.disabled {
+@@ -295,68 +354,275 @@ h3 {
+ }
+ 
+ /* =====================
+-   ドラフト画面
++   ドラフト画面（ボードレイアウト）
+    ===================== */
+ #screen-draft {
+-  gap: 16px;
++  padding: 0;
+   align-items: stretch;
+-  max-width: 1000px;
+-  margin: 0 auto;
++  overflow: hidden;
++}
++
++#draft-board {
++  display: grid;
++  grid-template-areas:
++    "corner-tl  opp-top    corner-tr"
++    "opp-left   center     opp-right"
++    "corner-bl  my-hand    corner-br";
++  grid-template-columns: 150px 1fr 150px;
++  grid-template-rows: 12% 1fr 26%;
+   width: 100%;
++  height: 80vh;  /* zoom:1.25 の補正（100÷1.25=80） */
++  gap: 6px;
++  padding: 6px;
++  box-sizing: border-box;
+ }
+ 
+-#draft-header {
++#draft-corner-tl { grid-area: corner-tl; }
++#opponent-top    { grid-area: opp-top;   }
++#draft-corner-tr { grid-area: corner-tr; }
++#opponent-left   { grid-area: opp-left;  }
++#draft-center    { grid-area: center;    }
++#opponent-right  { grid-area: opp-right; }
++#draft-corner-bl { grid-area: corner-bl; }
++#my-hand-zone    { grid-area: my-hand;   }
++#draft-corner-br { grid-area: corner-br; }
++
++/* コーナー共通 */
++#draft-corner-tl,
++#draft-corner-tr,
++#draft-corner-bl,
++#draft-corner-br {
+   display: flex;
+-  justify-content: space-between;
++  flex-direction: column;
++  justify-content: center;
+   align-items: center;
+-  padding: 10px 16px;
++  padding: 8px;
+   border: 1px solid var(--border);
+   background: var(--bg-secondary);
++  gap: 6px;
++  text-align: center;
+ }
+ 
+-#draft-current-player {
+-  color: var(--accent);
+-  font-size: 1rem;
+-  letter-spacing: 0.1em;
++.corner-label {
++  font-size: 0.55rem;
++  color: var(--text-muted);
++  text-transform: uppercase;
++  letter-spacing: 0.12em;
+ }
+ 
+ #draft-round {
+-  color: var(--text-secondary);
+-  font-size: 0.85rem;
++  font-size: 2rem;
++  color: var(--accent);
++  font-weight: bold;
++  letter-spacing: 0.05em;
++}
++
++#draft-event-display {
++  font-size: 0.65rem;
++  color: var(--warning);
++  line-height: 1.5;
+ }
+ 
+ #draft-budget-amount {
++  font-size: 1.5rem;
+   color: var(--accent);
+ }
+ 
+-/* 場のカード */
+-#field-cards {
++/* 対戦相手ゾーン共通 */
++.opponent-zone {
+   display: flex;
+-  flex-wrap: wrap;
+-  gap: 10px;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
++  gap: 6px;
++  padding: 8px;
++  border: 1px solid var(--border);
++  background: var(--bg-secondary);
++  transition: border-color 0.2s, box-shadow 0.2s;
+ }
+ 
+-/* 手札 */
+-#hand-cards {
++/* 左・右の相手は縦方向に手札を並べる */
++#opponent-left,
++#opponent-right {
++  justify-content: center;
++}
++
++#opponent-left  .opp-hand-cards,
++#opponent-right .opp-hand-cards {
++  flex-direction: column;
++}
++
++.opponent-info {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 2px;
++}
++
++.opp-name {
++  font-size: 0.7rem;
++  color: var(--text-secondary);
++  letter-spacing: 0.05em;
++}
++
++.opp-budget {
++  font-size: 0.6rem;
++  color: var(--accent-dim);
++}
++
++/* カード裏面ボックス */
++.opp-hand-cards {
+   display: flex;
+   flex-wrap: wrap;
+-  gap: 10px;
++  gap: 3px;
++  justify-content: center;
++  align-items: center;
++}
++
++/* 現在のターンプレイヤーのゾーンをハイライト */
++.opponent-zone.active-turn {
++  border-color: var(--accent);
++  box-shadow: 0 0 16px var(--accent), 0 0 30px var(--accent-glow);
+ }
+ 
+-/* 他プレイヤー情報 */
+-#other-players-info {
++.opponent-zone.active-turn .opp-name {
++  color: var(--accent);
++  text-shadow: 0 0 8px var(--accent);
++}
++
++/* カード裏面 */
++.card-back {
++  position: relative;
++  width: 26px;
++  height: 38px;
++  border-radius: 3px;
++  overflow: hidden;
++  box-shadow:
++    0 2px 6px rgba(0,0,0,0.6),
++    0 0 6px rgba(0, 212, 255, 0.2),
++    inset 0 0 0 1px rgba(0, 212, 255, 0.35);
++  transition: transform 0.15s ease, box-shadow 0.15s ease;
++  /* ベース：深い紺→黒のグラデーション */
++  background:
++    /* 斜めストライプ模様 */
++    repeating-linear-gradient(
++      -45deg,
++      transparent 0px,
++      transparent 2px,
++      rgba(0, 212, 255, 0.06) 2px,
++      rgba(0, 212, 255, 0.06) 3px
++    ),
++    /* 中央から放射状グラデーション */
++    radial-gradient(ellipse at 50% 40%, #0d2d52 0%, #050f20 100%);
++}
++
++/* 内枠フレーム */
++.card-back::before {
++  content: '';
++  position: absolute;
++  inset: 2px;
++  border-radius: 2px;
++  border: 1px solid rgba(0, 212, 255, 0.25);
++  pointer-events: none;
++}
++
++/* ホログラフィックシーン */
++.card-back::after {
++  content: '';
++  position: absolute;
++  inset: 0;
++  border-radius: 3px;
++  background: linear-gradient(
++    125deg,
++    transparent 30%,
++    rgba(255,255,255,0.04) 48%,
++    rgba(0, 212, 255, 0.1) 52%,
++    transparent 70%
++  );
++  pointer-events: none;
++}
++
++/* 中央フィールド */
++#draft-center {
+   display: flex;
+-  gap: 16px;
++  flex-direction: column;
++  align-items: center;
++  gap: 8px;
++  padding: 10px 8px;
++  border: 1px solid var(--accent-dim);
++  background: radial-gradient(ellipse at center, #071e38 0%, #030b18 100%);
++  box-shadow: inset 0 0 40px rgba(0, 212, 255, 0.06), 0 0 12px rgba(0, 212, 255, 0.1);
++  overflow: auto;
++}
++
++#field-effect-text {
++  font-size: 0.7rem;
++  color: var(--warning);
++  min-height: 18px;
++  text-align: center;
++  letter-spacing: 0.05em;
++}
++
++#field-announce-text {
+   font-size: 0.8rem;
+-  color: var(--text-secondary);
++  color: var(--accent);
++  min-height: 18px;
++  text-align: center;
++  letter-spacing: 0.05em;
++}
++
++/* 場のカード：5列×2行グリッド */
++#field-cards {
++  display: grid;
++  grid-template-columns: repeat(5, auto);
++  gap: 8px;
++  justify-content: center;
+ }
+ 
+ /* ドラフトアクション */
+ #draft-actions {
+   display: flex;
+   align-items: center;
+-  gap: 16px;
+-  padding: 12px 0;
++  gap: 12px;
++  flex-wrap: wrap;
++  justify-content: center;
++  padding: 4px 0;
++}
++
++#selected-card-preview {
++  font-size: 0.75rem;
++  color: var(--accent);
++  letter-spacing: 0.05em;
++}
++
++/* 自分の手札ゾーン（下） */
++#my-hand-zone {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  padding: 6px;
++  border: 1px solid var(--accent-dim);
++  background: var(--bg-secondary);
++  overflow-x: auto;
++  overflow-y: hidden;
++  min-height: 0;
++}
++
++/* 手札 */
++#hand-cards {
++  display: flex;
++  flex-wrap: nowrap;
++  gap: 6px;
++  overflow-x: auto;
++  padding-bottom: 2px;
++}
++
++/* ドラフト画面内のカードをコンパクト化 */
++#draft-center .card,
++#my-hand-zone .card {
++  min-height: 155px;
++  width: 110px;
++  font-size: 0.85em;
+ }
+ 
+ /* =====================
+diff --git a/public/ui-draft.js b/public/ui-draft.js
+index 8461b73..242e840 100644
+--- a/public/ui-draft.js
++++ b/public/ui-draft.js
+@@ -1,5 +1,5 @@
+ // ui-draft.js
+-import { initSync, watchGameState, stopGameState, pickCard, skipTurn } from './sync.js';
++import { initSync, watchGameState, stopGameState, pickCard, skipTurn, updateGameState } from './sync.js';
+ // =====================
+ // 画面切り替え（全体共通）
+ // =====================
+@@ -27,6 +27,11 @@ export let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
+ // 高騰イベント（準備画面で決定し、デッキ生成後に適用する）
+ let currentEvent = null
+ 
++// フェードインアニメーション管理
++let knownFieldCards = new Set()   // 既に表示済みのフィールドカード
++let prevHandLength = 0             // 自分の手札の前回描画時の枚数
++let prevOpponentHandLengths = {}   // 相手ごとの前回手札枚数 { playerIndex: number }
++
+ const HUMAN_INDEX = 0   // P1が人間（ソロモード用）
+ const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
+ 
+@@ -178,7 +183,13 @@ function renderPrepScreen() {
+   document.getElementById('event-display').textContent = eventLabels[currentEvent] ?? currentEvent
+ }
+ 
+-document.getElementById('btn-to-draft').addEventListener('click', () => {
++document.getElementById('btn-to-draft').addEventListener('click', async () => {
++  if (myUid !== null) {
++    // オンライン：ホストがFirestoreにdraftStartedを書き込む → 全員が一斉に遷移
++    await updateGameState({ draftStarted: true })
++    return
++  }
++  // ソロモード
+   deck = createDeck()
+   applyEvent(currentEvent, deck)
+   field = createField(deck)
+@@ -187,6 +198,10 @@ document.getElementById('btn-to-draft').addEventListener('click', () => {
+   draftRound = 1
+   selectedCard = null
+ 
++  knownFieldCards = new Set()
++  prevHandLength = 0
++  prevOpponentHandLengths = {}
++
+   renderDraftScreen()
+   showScreen('screen-draft')
+ })
+@@ -197,14 +212,21 @@ document.getElementById('btn-to-draft').addEventListener('click', () => {
+ function renderDraftScreen() {
+   const currentIndex = getCurrentTurnIndex()
+   const currentPlayer = players[currentIndex]
++  if (!currentPlayer) return  // 状態不整合のガード
+   const myIndex = getMyIndex()
+   const isMyTurn = currentIndex === myIndex
+ 
+-  document.getElementById('draft-current-player').textContent =
+-    isMyTurn ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
++  // ラウンド・予算・アナウンス更新
+   const currentRound = myUid !== null ? onlineDraftRound : draftRound
+-  document.getElementById('draft-round').textContent = `ラウンド ${currentRound}`
++  document.getElementById('draft-round').textContent = currentRound
+   document.getElementById('draft-budget-amount').textContent = `¥${players[myIndex].budget}`
++  document.getElementById('field-announce-text').textContent =
++    isMyTurn ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
++
++  // ソロモード：イベントをコーナーに表示
++  if (myUid === null && currentEvent) {
++    document.getElementById('draft-event-display').textContent = EVENT_LABELS[currentEvent] ?? currentEvent
++  }
+ 
+   renderField(currentPlayer, isMyTurn)
+   renderHand(myIndex)
+@@ -226,7 +248,8 @@ function renderField(currentPlayer, isHuman) {
+ 
+   const canAffordAny = field.some(c => c.cost <= currentPlayer.budget)
+ 
+-  field.forEach(card => {
++  let newCardIdx = 0
++  field.forEach((card) => {
+     const el = createCardEl(card)
+     const affordable = card.cost <= currentPlayer.budget
+ 
+@@ -236,6 +259,17 @@ function renderField(currentPlayer, isHuman) {
+       el.classList.add('disabled')
+     }
+ 
++    if (!knownFieldCards.has(card)) {
++      el.classList.add('card-appear')
++      el.style.animationDelay = `${newCardIdx * 55}ms`
++      el.addEventListener('animationend', () => {
++        el.classList.remove('card-appear')
++        el.style.animationDelay = ''
++      }, { once: true })
++      knownFieldCards.add(card)
++      newCardIdx++
++    }
++
+     container.appendChild(el)
+   })
+ 
+@@ -251,23 +285,61 @@ function renderHand(myIndex = HUMAN_INDEX) {
+   const human = players[myIndex]
+   const container = document.getElementById('hand-cards')
+   container.innerHTML = ''
+-  document.getElementById('hand-count').textContent = human.hand.length
+ 
+-  human.hand.forEach(card => {
++  human.hand.forEach((card, idx) => {
+     const el = createCardEl(card)
++    if (idx >= prevHandLength) {
++      el.classList.add('card-appear')
++      el.style.animationDelay = `${(idx - prevHandLength) * 40}ms`
++    }
+     container.appendChild(el)
+   })
++  prevHandLength = human.hand.length
+ }
+ 
+ function renderOtherPlayers(myIndex = HUMAN_INDEX) {
+-  const container = document.getElementById('other-players-info')
+-  container.innerHTML = ''
++  const zoneIds = ['top', 'left', 'right']
++
++  // 全ゾーンをリセット
++  zoneIds.forEach(pos => {
++    const zone = document.getElementById(`opponent-${pos}`)
++    zone.classList.add('hidden')
++    zone.classList.remove('active-turn')
++    zone.querySelector('.opp-hand-cards').innerHTML = ''
++    zone.querySelector('.opp-name').textContent = ''
++  })
+ 
+-  players.forEach((p, i) => {
+-    if (i === myIndex) return
+-    const span = document.createElement('span')
+-    span.textContent = `${p.name}: ${p.hand.length}枚`
+-    container.appendChild(span)
++  // 対戦相手リスト（自分を除く）
++  const opponents = players
++    .map((p, i) => ({ p, i }))
++    .filter(({ i }) => i !== myIndex)
++
++  const currentTurnIndex = getCurrentTurnIndex()
++  // 相手の人数に応じてゾーンを割り当て（1人→top、2人→top+left、3人→top+left+right）
++  const usedZones = zoneIds.slice(0, opponents.length)
++
++  opponents.forEach(({ p, i }, idx) => {
++    const zone = document.getElementById(`opponent-${usedZones[idx]}`)
++    zone.classList.remove('hidden')
++
++    // アクティブターンをハイライト
++    if (i === currentTurnIndex) zone.classList.add('active-turn')
++
++    zone.querySelector('.opp-name').textContent = p.name
++
++    // 手札をカード裏面ボックスで表示（追加分だけアニメーション）
++    const handContainer = zone.querySelector('.opp-hand-cards')
++    const prevLen = prevOpponentHandLengths[i] ?? 0
++    for (let j = 0; j < p.hand.length; j++) {
++      const back = document.createElement('div')
++      back.className = 'card-back'
++      if (j >= prevLen) {
++        back.classList.add('card-appear')
++        back.style.animationDelay = `${(j - prevLen) * 40}ms`
++      }
++      handContainer.appendChild(back)
++    }
++    prevOpponentHandLengths[i] = p.hand.length
+   })
+ }
+ 
+@@ -509,14 +581,15 @@ const EVENT_LABELS = {
+   none: 'イベントなし：通常価格のまま'
+ }
+ 
+-export function startOnlineGame(uid) {
++export function startOnlineGame(uid, isHostPlayer) {
+   myUid = uid
+   document.getElementById('btn-to-draft').classList.add('hidden')
+ 
+   let prepScreenShown = false
++  let draftAnimInitialized = false
+ 
+   watchGameState((room) => {
+-    // ゲーム状態がFirestoreにまだ書き込まれていない場合は待つ
++    // ホストのgame state書き込みが完了するまで待つ
+     if (!room.field || !room.deck) return
+ 
+     players = room.players
+@@ -525,16 +598,29 @@ export function startOnlineGame(uid) {
+     onlineTurn = room.turn
+     onlineDraftRound = room.draftRound || 1
+ 
+-    // ラウンド8終了 or 全員8枚でドラフト終了
+-    const roundOver = onlineDraftRound > 8
+-    const allHaveCards = room.players.every(p => p.hand.length >= 8)
+-    if (roundOver || allHaveCards) {
+-      stopGameState()
+-      startSetPhase()
++    // ホストが「ドラフト開始」を押した後 → 全員がドラフト画面へ
++    if (room.draftStarted) {
++      if (!draftAnimInitialized) {
++        knownFieldCards = new Set()
++        prevHandLength = 0
++        prevOpponentHandLengths = {}
++        draftAnimInitialized = true
++      }
++      const roundOver = onlineDraftRound > 8
++      const allHaveCards = room.players.every(p => p.hand.length >= 8)
++      if (roundOver || allHaveCards) {
++        stopGameState()
++        startSetPhase()
++        return
++      }
++      // 市場イベントをコーナーに表示
++      document.getElementById('draft-event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? '-'
++      renderDraftScreen()
++      showScreen('screen-draft')
+       return
+     }
+ 
+-    // 初回のみ：準備画面にイベントと予算を表示し、3秒後にドラフトへ
++    // 準備画面（初回のみUI更新）
+     if (!prepScreenShown) {
+       prepScreenShown = true
+       document.getElementById('event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? ''
+@@ -546,14 +632,18 @@ export function startOnlineGame(uid) {
+         div.innerHTML = `<span>${p.name}</span><span class="amount">¥${p.budget}</span>`
+         budgetList.appendChild(div)
+       })
+-      setTimeout(() => {
+-        renderDraftScreen()
+-        showScreen('screen-draft')
+-      }, 3000)
+-      return
++      if (isHostPlayer) {
++        // ホストのみドラフト開始ボタンを表示
++        document.getElementById('btn-to-draft').textContent = 'ドラフト開始（ホスト）'
++        document.getElementById('btn-to-draft').classList.remove('hidden')
++      } else {
++        // 非ホストは待機メッセージ
++        document.getElementById('event-display').insertAdjacentHTML(
++          'afterend',
++          '<p id="online-wait-msg" style="color:#aaa;margin-top:12px;">ホストがドラフトを開始するまでお待ちください…</p>'
++        )
++      }
+     }
+-
+-    renderDraftScreen()
+-    showScreen('screen-draft')
++    // prepScreenShown済み・draftStartedなし → 待機中のまま何もしない
+   })
+ }
+\ No newline at end of file

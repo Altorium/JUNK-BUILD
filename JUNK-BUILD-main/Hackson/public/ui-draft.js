@@ -1,5 +1,5 @@
 // ui-draft.js
-import { initSync, watchGameState, stopGameState, pickCard, skipTurn } from './sync.js';
+import { initSync, watchGameState, stopGameState, pickCard, skipTurn, updateGameState } from './sync.js';
 // =====================
 // 画面切り替え（全体共通）
 // =====================
@@ -26,6 +26,11 @@ export let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
 
 // 高騰イベント（準備画面で決定し、デッキ生成後に適用する）
 let currentEvent = null
+
+// フェードインアニメーション管理
+let knownFieldCards = new Set()   // 既に表示済みのフィールドカード
+let prevHandLength = 0             // 自分の手札の前回描画時の枚数
+let prevOpponentHandLengths = {}   // 相手ごとの前回手札枚数 { playerIndex: number }
 
 const HUMAN_INDEX = 0   // P1が人間（ソロモード用）
 const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
@@ -599,6 +604,12 @@ function renderPrepScreen() {
 }
 
 document.getElementById('btn-to-draft').addEventListener('click', async () => {
+  if (myUid !== null) {
+    // オンライン：ホストがFirestoreにdraftStartedを書き込む → 全員が一斉に遷移
+    await updateGameState({ draftStarted: true })
+    return
+  }
+  // ソロモード
   deck = createDeck()
   applyEvent(currentEvent, deck)
   field = createField(deck)
@@ -608,6 +619,10 @@ document.getElementById('btn-to-draft').addEventListener('click', async () => {
   selectedCard = null
   happeningBlindField = false
   dealHappeningCards()
+
+  knownFieldCards = new Set()
+  prevHandLength = 0
+  prevOpponentHandLengths = {}
 
   renderDraftScreen()
   showScreen('screen-draft')
@@ -620,14 +635,21 @@ document.getElementById('btn-to-draft').addEventListener('click', async () => {
 function renderDraftScreen() {
   const currentIndex = getCurrentTurnIndex()
   const currentPlayer = players[currentIndex]
+  if (!currentPlayer) return  // 状態不整合のガード
   const myIndex = getMyIndex()
   const isMyTurn = currentIndex === myIndex
 
-  document.getElementById('draft-current-player').textContent =
-    isMyTurn ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
+  // ラウンド・予算・アナウンス更新
   const currentRound = myUid !== null ? onlineDraftRound : draftRound
-  document.getElementById('draft-round').textContent = `ラウンド ${currentRound}`
+  document.getElementById('draft-round').textContent = currentRound
   document.getElementById('draft-budget-amount').textContent = `¥${players[myIndex].budget}`
+  document.getElementById('field-announce-text').textContent =
+    isMyTurn ? 'あなたのターン' : `${currentPlayer.name} が選択中…`
+
+  // ソロモード：イベントをコーナーに表示
+  if (myUid === null && currentEvent) {
+    document.getElementById('draft-event-display').textContent = EVENT_LABELS[currentEvent] ?? currentEvent
+  }
 
   renderField(currentPlayer, isMyTurn)
   renderHand(myIndex)
@@ -650,7 +672,8 @@ function renderField(currentPlayer, isHuman) {
 
   const canAffordAny = field.some(c => c.cost <= currentPlayer.budget)
 
-  field.forEach(card => {
+  let newCardIdx = 0
+  field.forEach((card) => {
     const el = happeningBlindField ? createBlindCardEl(card) : createCardEl(card)
     const affordable = card.cost <= currentPlayer.budget
 
@@ -658,6 +681,17 @@ function renderField(currentPlayer, isHuman) {
       el.addEventListener('click', () => onFieldCardClick(card, el))
     } else {
       el.classList.add('disabled')
+    }
+
+    if (!knownFieldCards.has(card)) {
+      el.classList.add('card-appear')
+      el.style.animationDelay = `${newCardIdx * 55}ms`
+      el.addEventListener('animationend', () => {
+        el.classList.remove('card-appear')
+        el.style.animationDelay = ''
+      }, { once: true })
+      knownFieldCards.add(card)
+      newCardIdx++
     }
 
     container.appendChild(el)
@@ -675,23 +709,61 @@ function renderHand(myIndex = HUMAN_INDEX) {
   const human = players[myIndex]
   const container = document.getElementById('hand-cards')
   container.innerHTML = ''
-  document.getElementById('hand-count').textContent = human.hand.length
 
-  human.hand.forEach(card => {
+  human.hand.forEach((card, idx) => {
     const el = createCardEl(card)
+    if (idx >= prevHandLength) {
+      el.classList.add('card-appear')
+      el.style.animationDelay = `${(idx - prevHandLength) * 40}ms`
+    }
     container.appendChild(el)
   })
+  prevHandLength = human.hand.length
 }
 
 function renderOtherPlayers(myIndex = HUMAN_INDEX) {
-  const container = document.getElementById('other-players-info')
-  container.innerHTML = ''
+  const zoneIds = ['top', 'left', 'right']
 
-  players.forEach((p, i) => {
-    if (i === myIndex) return
-    const span = document.createElement('span')
-    span.textContent = `${p.name}: ${p.hand.length}枚`
-    container.appendChild(span)
+  // 全ゾーンをリセット
+  zoneIds.forEach(pos => {
+    const zone = document.getElementById(`opponent-${pos}`)
+    zone.classList.add('hidden')
+    zone.classList.remove('active-turn')
+    zone.querySelector('.opp-hand-cards').innerHTML = ''
+    zone.querySelector('.opp-name').textContent = ''
+  })
+
+  // 対戦相手リスト（自分を除く）
+  const opponents = players
+    .map((p, i) => ({ p, i }))
+    .filter(({ i }) => i !== myIndex)
+
+  const currentTurnIndex = getCurrentTurnIndex()
+  // 相手の人数に応じてゾーンを割り当て（1人→top、2人→top+left、3人→top+left+right）
+  const usedZones = zoneIds.slice(0, opponents.length)
+
+  opponents.forEach(({ p, i }, idx) => {
+    const zone = document.getElementById(`opponent-${usedZones[idx]}`)
+    zone.classList.remove('hidden')
+
+    // アクティブターンをハイライト
+    if (i === currentTurnIndex) zone.classList.add('active-turn')
+
+    zone.querySelector('.opp-name').textContent = p.name
+
+    // 手札をカード裏面ボックスで表示（追加分だけアニメーション）
+    const handContainer = zone.querySelector('.opp-hand-cards')
+    const prevLen = prevOpponentHandLengths[i] ?? 0
+    for (let j = 0; j < p.hand.length; j++) {
+      const back = document.createElement('div')
+      back.className = 'card-back'
+      if (j >= prevLen) {
+        back.classList.add('card-appear')
+        back.style.animationDelay = `${(j - prevLen) * 40}ms`
+      }
+      handContainer.appendChild(back)
+    }
+    prevOpponentHandLengths[i] = p.hand.length
   })
 }
 
@@ -930,25 +1002,77 @@ function checkAllSlotsFilled() {
 }
 
 
-export function startOnlineGame(uid) {
+const EVENT_LABELS = {
+  gpu_up: 'グラボ高騰：全GPUカードのコストが上昇',
+  memory_up: 'メモリ高騰：全メモリカードのコストが上昇',
+  all_up: '半導体不足：全パーツのコストが上昇',
+  none: 'イベントなし：通常価格のまま'
+}
+
+export function startOnlineGame(uid, isHostPlayer) {
   myUid = uid
+  document.getElementById('btn-to-draft').classList.add('hidden')
+
+  let prepScreenShown = false
+  let draftAnimInitialized = false
+
   watchGameState((room) => {
+    // ホストのgame state書き込みが完了するまで待つ
+    if (!room.field || !room.deck) return
+
     players = room.players
     field = room.field
     deck = room.deck
     onlineTurn = room.turn
     onlineDraftRound = room.draftRound || 1
 
-    // ラウンド8終了 or 全員8枚でドラフト終了
-    const roundOver = onlineDraftRound > 8
-    const allHaveCards = room.players.every(p => p.hand.length >= 8)
-    if (roundOver || allHaveCards) {
-      stopGameState()
-      startSetPhase()
+    // ホストが「ドラフト開始」を押した後 → 全員がドラフト画面へ
+    if (room.draftStarted) {
+      if (!draftAnimInitialized) {
+        knownFieldCards = new Set()
+        prevHandLength = 0
+        prevOpponentHandLengths = {}
+        draftAnimInitialized = true
+      }
+      const roundOver = onlineDraftRound > 8
+      const allHaveCards = room.players.every(p => p.hand.length >= 8)
+      if (roundOver || allHaveCards) {
+        stopGameState()
+        startSetPhase()
+        return
+      }
+      // 市場イベントをコーナーに表示
+      document.getElementById('draft-event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? '-'
+      renderDraftScreen()
+      showScreen('screen-draft')
       return
     }
 
-    renderDraftScreen()
-    showScreen('screen-draft')
+    // 準備画面（初回のみUI更新）
+    if (!prepScreenShown) {
+      prepScreenShown = true
+      document.getElementById('event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? ''
+
+      const budgetList = document.getElementById('budget-list')
+      budgetList.innerHTML = ''
+      room.players.forEach(p => {
+        const div = document.createElement('div')
+        div.className = 'budget-row'
+        div.innerHTML = `<span>${p.name}</span><span class="amount">¥${p.budget}</span>`
+        budgetList.appendChild(div)
+      })
+      if (isHostPlayer) {
+        // ホストのみドラフト開始ボタンを表示
+        document.getElementById('btn-to-draft').textContent = 'ドラフト開始（ホスト）'
+        document.getElementById('btn-to-draft').classList.remove('hidden')
+      } else {
+        // 非ホストは待機メッセージ
+        document.getElementById('event-display').insertAdjacentHTML(
+          'afterend',
+          '<p id="online-wait-msg" style="color:#aaa;margin-top:12px;">ホストがドラフトを開始するまでお待ちください…</p>'
+        )
+      }
+    }
+    // prepScreenShown済み・draftStartedなし → 待機中のまま何もしない
   })
 }
