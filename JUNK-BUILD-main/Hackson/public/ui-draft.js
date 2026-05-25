@@ -1,5 +1,5 @@
 // ui-draft.js
-import { initSync, watchGameState, stopGameState, pickCard, skipTurn, updateGameState } from './sync.js';
+import { initSync, watchGameState, stopGameState, skipTurn, updateGameState } from './sync.js';
 // =====================
 // 画面切り替え（全体共通）
 // =====================
@@ -28,7 +28,8 @@ export let currentBuild = {}   // { cpu, gpu, memory, motherboard, psu }
 let currentEvent = null
 
 // フェードインアニメーション管理
-let knownFieldCards = new Set()   // 既に表示済みのフィールドカード
+let fieldCardElements = new Map()    // card → DOM要素（フィールド上の永続要素管理）
+let prevHappeningBlindField = false  // blind_field 状態の前回値（変化検出用）
 let prevHandLength = 0             // 自分の手札の前回描画時の枚数
 let prevOpponentHandLengths = {}   // 相手ごとの前回手札枚数 { playerIndex: number }
 
@@ -36,6 +37,8 @@ const HUMAN_INDEX = 0   // P1が人間（ソロモード用）
 const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
 
 let happeningBlindField = false  // 暗闇のジャンク市: このターンは場の詳細を隠す
+let lastHandledTurnKey = ''      // オンライン：処理済みターンキー "turn-round"
+let preHappeningInProgress = false  // オンライン：pre-happening モーダル表示中フラグ
 
 export let myUid = null      // null=ソロモード、UIDあり=オンラインモード
 let onlineTurn = 0         // Firestoreから来るturn（オンラインのみ使用）
@@ -620,7 +623,8 @@ document.getElementById('btn-to-draft').addEventListener('click', async () => {
   happeningBlindField = false
   dealHappeningCards()
 
-  knownFieldCards = new Set()
+  fieldCardElements = new Map()
+  prevHappeningBlindField = false
   prevHandLength = 0
   prevOpponentHandLengths = {}
 
@@ -668,33 +672,71 @@ function renderDraftScreen() {
 
 function renderField(currentPlayer, isHuman) {
   const container = document.getElementById('field-cards')
-  container.innerHTML = ''
-
   const canAffordAny = field.some(c => c.cost <= currentPlayer.budget)
+  // Firestoreから返るたびに新しいオブジェクトになるため、card.nameを安定キーとして使う
+  const currentFieldNames = new Set(field.map(c => c.name))
 
+  // blind_field 状態が変化したら既存要素を全破棄して再生成
+  if (happeningBlindField !== prevHappeningBlindField) {
+    prevHappeningBlindField = happeningBlindField
+    for (const [, el] of fieldCardElements) el.remove()
+    fieldCardElements.clear()
+  }
+
+  // フィールドから消えたカードをフェードアウトして削除
+  for (const [name, el] of [...fieldCardElements]) {
+    if (!currentFieldNames.has(name)) {
+      if (!el.classList.contains('card-leaving')) {
+        el.classList.add('card-leaving')
+        el.addEventListener('animationend', () => el.remove(), { once: true })
+      }
+      fieldCardElements.delete(name)
+    }
+  }
+
+  // 既存カードの状態更新 & 新規カードのフェードイン追加
   let newCardIdx = 0
-  field.forEach((card) => {
-    const el = happeningBlindField ? createBlindCardEl(card) : createCardEl(card)
+  field.forEach(card => {
     const affordable = card.cost <= currentPlayer.budget
 
-    if (isHuman && affordable) {
-      el.addEventListener('click', () => onFieldCardClick(card, el))
+    if (fieldCardElements.has(card.name)) {
+      // 既存要素：フェードイン中でなければ選択可否を更新
+      const el = fieldCardElements.get(card.name)
+      if (!el.classList.contains('card-appear')) {
+        if (isHuman && affordable) {
+          el.onclick = () => onFieldCardClick(card, el)
+          el.classList.remove('disabled')
+        } else {
+          el.onclick = null
+          el.classList.add('disabled')
+        }
+      }
     } else {
-      el.classList.add('disabled')
-    }
-
-    if (!knownFieldCards.has(card)) {
-      el.classList.add('card-appear')
+      // 新規カード：フェードインで追加（アニメーション中は disabled）
+      const el = happeningBlindField ? createBlindCardEl(card) : createCardEl(card)
+      el.classList.add('disabled', 'card-appear')
       el.style.animationDelay = `${newCardIdx * 55}ms`
       el.addEventListener('animationend', () => {
         el.classList.remove('card-appear')
         el.style.animationDelay = ''
+        // アニメーション完了時点のターン状態を再評価（アニメーション中にターンが変わる可能性があるため）
+        const curIdx = getCurrentTurnIndex()
+        const curPlayer = players[curIdx]
+        if (!curPlayer) return
+        const curIsHuman = curIdx === getMyIndex()
+        const curAffordable = card.cost <= curPlayer.budget
+        if (curIsHuman && curAffordable) {
+          el.onclick = () => onFieldCardClick(card, el)
+          el.classList.remove('disabled')
+        } else {
+          el.onclick = null
+          el.classList.add('disabled')
+        }
       }, { once: true })
-      knownFieldCards.add(card)
+      container.appendChild(el)
+      fieldCardElements.set(card.name, el)
       newCardIdx++
     }
-
-    container.appendChild(el)
   })
 
   const skipBtn = document.getElementById('btn-skip-turn')
@@ -787,14 +829,43 @@ function updatePickButton() {
   document.getElementById('btn-pick-card').disabled = (selectedCard === null)
 }
 
+// ピックされたカードをフェードアウトして DOM から削除（完了まで待機）
+async function fadeOutPickedCard(card) {
+  const el = fieldCardElements.get(card.name)
+  if (!el || el.classList.contains('card-leaving')) return
+  el.classList.add('card-leaving')
+  await new Promise(resolve => {
+    el.addEventListener('animationend', () => { el.remove(); resolve() }, { once: true })
+  })
+  fieldCardElements.delete(card.name)
+}
+
 document.getElementById('btn-pick-card').addEventListener('click', async () => {
   if (!selectedCard) return
+  const cardToPick = selectedCard
   if (myUid !== null) {
-    const fieldIndex = field.indexOf(selectedCard)
-    await pickCard(fieldIndex)         // オンライン：Firestoreを更新
+    // フィールドインデックスを先に確保
+    const fieldIndex = field.indexOf(cardToPick)
+    const myIdx = getMyIndex()
+    // ピックされたカードをフェードアウト（完了を待つ → 完了後に Firestore 更新）
+    await fadeOutPickedCard(cardToPick)
+    // post-happening モーダルを表示
+    await maybeTriggerPostHappening(myIdx)
+    renderHappeningHand()
+    // ローカルでピックを適用してから1回だけ Firestore に書き込む
+    // （中間書き込みを挟むとリスナーが再描画してカードが一瞬再表示される問題を防止）
+    players[myIdx].hand.push(cardToPick)
+    players[myIdx].budget -= cardToPick.cost
+    field.splice(fieldIndex, 1)
+    if (deck.length > 0) field.push(deck.shift())
+    const newTurn = (onlineTurn + 1) % players.length
+    const newRound = newTurn === 0 ? onlineDraftRound + 1 : onlineDraftRound
+    await updateGameState({ players, field: [...field], deck: [...deck], turn: newTurn, draftRound: newRound })
   } else {
     const currentIndex = getCurrentTurnIndex()
-    pickCardLocal(currentIndex, selectedCard)  // ソロ：ローカル処理
+    // ピックされたカードをフェードアウト（完了を待つ → 完了後にローカル処理）
+    await fadeOutPickedCard(cardToPick)
+    pickCardLocal(currentIndex, cardToPick)
     await maybeTriggerPostHappening(currentIndex)
     nextDraftTurn()
   }
@@ -855,8 +926,11 @@ function processCpuTurn() {
     return (card.score ?? 0) > (best.score ?? 0) ? card : best
   }, available[0])
 
-  pickCardLocal(currentIndex, pick)
-  maybeTriggerPostHappening(currentIndex).then(() => nextDraftTurn())
+  // フェードアウト完了後にピック処理（11枚問題を防ぐ）
+  fadeOutPickedCard(pick).then(() => {
+    pickCardLocal(currentIndex, pick)
+    maybeTriggerPostHappening(currentIndex).then(() => nextDraftTurn())
+  })
 }
 
 // =====================
@@ -1020,19 +1094,37 @@ export function startOnlineGame(uid, isHostPlayer) {
     // ホストのgame state書き込みが完了するまで待つ
     if (!room.field || !room.deck) return
 
+    // Firestoreで上書きされる前にハプニングカードの状態を退避
+    const savedHappening = {}
+    players.forEach(p => {
+      if (p.id) savedHappening[p.id] = { pre: p.happeningPreCard, post: p.happeningPostCard }
+    })
+
     players = room.players
     field = room.field
     deck = room.deck
     onlineTurn = room.turn
     onlineDraftRound = room.draftRound || 1
 
+    // 退避したハプニングカードを復元
+    players.forEach(p => {
+      if (savedHappening[p.id]) {
+        p.happeningPreCard  = savedHappening[p.id].pre
+        p.happeningPostCard = savedHappening[p.id].post
+      }
+    })
+
     // ホストが「ドラフト開始」を押した後 → 全員がドラフト画面へ
     if (room.draftStarted) {
       if (!draftAnimInitialized) {
-        knownFieldCards = new Set()
+        fieldCardElements = new Map()
+        prevHappeningBlindField = false
         prevHandLength = 0
         prevOpponentHandLengths = {}
+        lastHandledTurnKey = ''
+        preHappeningInProgress = false
         draftAnimInitialized = true
+        dealHappeningCards()
       }
       const roundOver = onlineDraftRound > 8
       const allHaveCards = room.players.every(p => p.hand.length >= 8)
@@ -1045,6 +1137,20 @@ export function startOnlineGame(uid, isHostPlayer) {
       document.getElementById('draft-event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? '-'
       renderDraftScreen()
       showScreen('screen-draft')
+
+      // 自分のターン開始時に pre-happening を発火（未処理のターンのみ）
+      const myIdx = getMyIndex()
+      const turnKey = `${onlineTurn}-${onlineDraftRound}`
+      if (onlineTurn === myIdx && !preHappeningInProgress && turnKey !== lastHandledTurnKey) {
+        lastHandledTurnKey = turnKey
+        preHappeningInProgress = true
+        maybeTriggerPreHappening(myIdx).then(async () => {
+          preHappeningInProgress = false
+          renderHappeningHand()
+          renderDraftScreen()
+          await updateGameState({ field: [...field], deck: [...deck], players })
+        })
+      }
       return
     }
 
