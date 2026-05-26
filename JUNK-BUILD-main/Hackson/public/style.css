@@ -592,27 +592,22 @@ h3 {
   justify-content: center;
 }
 
-/* ドラフトアクション */
-#draft-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+/* 中央フィールド内のハプニングカード表示 */
+#draft-center #happening-hand {
+  width: 60%;
+  font-size: 0.68rem;
+  padding: 6px 10px;
+  gap: 10px;
+  border-color: var(--warning);
+  background: rgba(255, 170, 0, 0.05);
   justify-content: center;
-  padding: 4px 0;
-}
-
-#selected-card-preview {
-  font-size: 0.75rem;
-  color: var(--accent);
-  letter-spacing: 0.05em;
 }
 
 /* 自分の手札ゾーン（下） */
 #my-hand-zone {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 6px;
   border: 1px solid var(--accent-dim);
   background: var(--bg-secondary);
@@ -638,42 +633,28 @@ h3 {
   font-size: 0.85em;
 }
 
-/* 左下コーナー内のハプニングカード表示（コンパクト化） */
-#draft-corner-bl #happening-hand {
+/* 右下コーナー内のアクションエリア */
+#draft-corner-br #draft-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font-size: 0.55rem;
+  gap: 6px;
+  width: 100%;
 }
 
-#draft-corner-bl .happening-hand-label {
-  font-size: 0.5rem;
-  color: var(--warning);
+#draft-corner-br #selected-card-preview {
+  font-size: 0.6rem;
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  min-height: 1em;
 }
 
-#draft-corner-bl .happening-hand-item {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-
-#draft-corner-bl .happening-hand-phase {
-  font-size: 0.45rem;
-  border: 1px solid var(--text-muted);
-  padding: 0 2px;
-}
-
-#draft-corner-bl #happening-hand-pre,
-#draft-corner-bl #happening-hand-post {
-  font-size: 0.5rem;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+#draft-corner-br #btn-pick-card {
+  width: 100%;
+  padding: 8px 4px;
+  font-size: 0.7rem;
 }
 
 /* =====================
