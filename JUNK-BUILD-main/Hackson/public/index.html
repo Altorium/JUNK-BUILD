@@ -105,9 +105,16 @@
           <div id="field-effect-text"></div>
           <div id="field-cards"></div>
           <div id="field-announce-text"></div>
-          <div id="draft-actions">
-            <div id="selected-card-preview"></div>
-            <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
+          <div id="happening-hand">
+            <span class="happening-hand-label">ハプニングカード:</span>
+            <span class="happening-hand-item">
+              <span class="happening-hand-phase">開始前</span>
+              <span id="happening-hand-pre">---</span>
+            </span>
+            <span class="happening-hand-item">
+              <span class="happening-hand-phase">終了後</span>
+              <span id="happening-hand-post">---</span>
+            </span>
           </div>
         </div>
 
@@ -125,24 +132,17 @@
           <span id="draft-budget-amount">¥130</span>
         </div>
 
-        <!-- 下：ハプニングカード帯 + 自分の手札 -->
+        <!-- 下：自分の手札 -->
         <div id="my-hand-zone">
-          <div id="happening-hand">
-            <span class="happening-hand-label">ハプニングカード:</span>
-            <span class="happening-hand-item">
-              <span class="happening-hand-phase">開始前</span>
-              <span id="happening-hand-pre">---</span>
-            </span>
-            <span class="happening-hand-item">
-              <span class="happening-hand-phase">終了後</span>
-              <span id="happening-hand-post">---</span>
-            </span>
-          </div>
           <div id="hand-cards"></div>
         </div>
 
-        <!-- 右下：SKIPボタン -->
+        <!-- 右下：「このカードを取る」＋SKIPボタン -->
         <div id="draft-corner-br">
+          <div id="draft-actions">
+            <div id="selected-card-preview"></div>
+            <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
+          </div>
           <button id="btn-skip-turn" class="btn btn-secondary hidden">SKIP</button>
         </div>
 
