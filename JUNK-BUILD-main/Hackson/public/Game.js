@@ -152,10 +152,10 @@ function shuffle(array) {
 function createDeck() {
   /** @type {Card[]} */
   let deck = []
+  let uid = 0
 
   Object.values(cards).forEach(list => {
-    // 参照渡しを防ぐためディープコピー風に複製
-    const copy = list.map(c => ({ ...c }))
+    const copy = list.map(c => ({ ...c, _id: uid++ }))
     deck = deck.concat(copy)
   })
 
