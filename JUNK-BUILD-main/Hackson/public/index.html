@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.25">
     <title>PCパーツカードゲーム</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 3D用ライブラリ追加 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
 
@@ -198,20 +203,29 @@
 
     <!-- ===== 起動演出画面 ===== -->
     <div id="screen-boot" class="screen hidden">
-        <div id="bios-screen">
-            <div id="bios-log">
-                <!-- ui-boot.jsがアニメーションでテキストを1行ずつ追加 -->
+        
+        <!-- ▼ 追加：3D演出用キャンバスとエフェクト -->
+        <div id="canvas-container"></div>
+        <div id="flash-overlay"></div>
+        <div id="effect-text"></div>
+
+        <!-- 既存のBIOS画面をラッパーで囲む -->
+        <div id="bios-screen-wrapper">
+            <div id="bios-screen">
+                <div id="bios-log">
+                    <!-- ui-boot.jsがアニメーションでテキストを1行ずつ追加 -->
+                </div>
             </div>
-        </div>
-        <div id="boot-result" class="hidden">
-            <div id="boot-success" class="hidden">
-                <p>起動成功！</p>
-                <button id="btn-to-benchmark" class="btn btn-primary">ベンチマーク開始</button>
-            </div>
-            <div id="boot-failure" class="hidden">
-                <p id="boot-failure-reason">起動失敗</p>
-                <button id="btn-debug" class="btn btn-warning">起死回生デバッグ</button>
-                <button id="btn-skip-benchmark" class="btn btn-secondary">諦めてスキップ</button>
+            <div id="boot-result" class="hidden">
+                <div id="boot-success" class="hidden">
+                    <p>起動成功！</p>
+                    <button id="btn-to-benchmark" class="btn btn-primary">ベンチマーク開始</button>
+                </div>
+                <div id="boot-failure" class="hidden">
+                    <p id="boot-failure-reason">起動失敗</p>
+                    <button id="btn-debug" class="btn btn-warning">起死回生デバッグ</button>
+                    <button id="btn-skip-benchmark" class="btn btn-secondary">諦めてスキップ</button>
+                </div>
             </div>
         </div>
     </div>
@@ -355,6 +369,7 @@
     <script type="module" src="ui-draft.js"></script>
     <!-- 5/18 21:38 追加分ここまで -->
     <script type="module" src="ui-boot.js"></script>
+    <script src="ui-3d.js"></script>
 </body>
 </html>
 
