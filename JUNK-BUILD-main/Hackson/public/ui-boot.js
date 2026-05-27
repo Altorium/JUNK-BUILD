@@ -62,31 +62,65 @@ function startBoot(player) {
 function runBiosAnimation(build) {
   const log = document.getElementById('bios-log')
   log.innerHTML = ''
-
   document.getElementById('boot-result').classList.add('hidden')
   document.getElementById('boot-success').classList.add('hidden')
   document.getElementById('boot-failure').classList.add('hidden')
 
+  // ★ 3Dモデルのパーツ位置をリセット
+  if (window.resetParts3D) window.resetParts3D();
+
   const compatible = checkCompatibility(build)
   const reliable   = compatible ? reliabilityCheck(build) : false
-
   const lines = makeBiosLines(build, compatible, reliable)
 
-  // 1行ずつ表示
-  lines.forEach((text, i) => {
-    setTimeout(() => {
-      const div = document.createElement('div')
-      div.className = 'bios-line'
-      div.textContent = text
-      div.style.animationDelay = '0s'
-      log.appendChild(div)
+  let i = 0;
+  function showNextLine() {
+    if (i >= lines.length) {
+      setTimeout(() => {
+        // ★ 起動成功時は最後に一斉フラッシュの3Dエフェクトを再生
+        if (compatible && reliable && window.playFinalBootEffect3D) {
+          window.playFinalBootEffect3D().then(() => {
+            showBootResult(compatible && reliable, compatible)
+          });
+        } else {
+          showBootResult(compatible && reliable, compatible)
+        }
+      }, 600);
+      return;
+    }
 
-      // 最後の行が表示されたら結果を表示
-      if (i === lines.length - 1) {
-        setTimeout(() => showBootResult(compatible && reliable, compatible), 600)
-      }
-    }, i * 200)
-  })
+    const text = lines[i];
+    const div = document.createElement('div')
+    div.className = 'bios-line'
+    div.textContent = text
+    div.style.animationDelay = '0s'
+    log.appendChild(div)
+
+    let waitTime = 200;
+
+    // ★ テキストに合わせて該当パーツの3Dアニメーションを呼び出す
+    if (text.startsWith('CPU detected')) {
+      if (window.assemblePart3D) window.assemblePart3D('cpu');
+      waitTime = 600;
+    } else if (text.startsWith('GPU detected')) {
+      if (window.assemblePart3D) window.assemblePart3D('gpu');
+      waitTime = 600;
+    } else if (text.startsWith('Memory')) {
+      if (window.assemblePart3D) window.assemblePart3D('memory');
+      waitTime = 600;
+    } else if (text.startsWith('Motherboard')) {
+      if (window.assemblePart3D) window.assemblePart3D('motherboard');
+      waitTime = 600;
+    } else if (text.startsWith('PSU')) {
+      if (window.assemblePart3D) window.assemblePart3D('psu');
+      waitTime = 600;
+    }
+
+    i++;
+    setTimeout(showNextLine, waitTime);
+  }
+
+  showNextLine();
 }
 
 function makeBiosLines(build, compatible, reliable) {
