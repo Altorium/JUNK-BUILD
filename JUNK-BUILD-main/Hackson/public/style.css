@@ -739,16 +739,89 @@ h3 {
    BIOS起動画面
    ===================== */
 #screen-boot {
-  justify-content: center;
-  background: #000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center; 
+  background: transparent;
+  overflow: hidden; 
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* 3Dキャンバスとエフェクト */
+#canvas-container {
+  position: absolute;
+  top: 0;
+  right: 0; 
+  width: 50%; /* 右半分の広さ */
+  height: 100%;
+  z-index: 1;
+}
+
+#canvas-container canvas {
+  display: block;
+  outline: none;
+}
+
+#flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#effect-text {
+  position: absolute;
+  top: 50%;
+  left: 75%; /* 右半分の中央にエフェクトを出す */
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  color: #00ff66;
+  text-shadow: 0 0 20px #00ff66, 0 0 40px #00ff66;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+/* BIOS文字のコンテナ */
+#bios-screen-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 45%; /* 左側の45%を使用 */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 縦の中央に配置 */
+  gap: 24px; /* 上と下のボックスの隙間 */
+  pointer-events: none; 
 }
 
 #bios-screen {
+  flex: 0 0 65%; /* 高さを全体の65%に固定 */
   width: 100%;
-  max-width: 700px;
   font-size: 0.9rem;
   color: #00cc44;
   line-height: 1.8;
+  background: rgba(0, 0, 0, 0.7); 
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-dim);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+  overflow-y: auto; 
+  box-sizing: border-box;
 }
 
 #bios-log {
@@ -757,7 +830,6 @@ h3 {
   gap: 2px;
 }
 
-/* テキストが1行ずつ現れるアニメーション用 */
 .bios-line {
   opacity: 0;
   animation: fadeInLine 0.05s forwards;
@@ -768,8 +840,19 @@ h3 {
 }
 
 #boot-result {
-  margin-top: 32px;
+  flex: 0 0 25%; /* 高さを全体の25%に固定 */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; 
   text-align: center;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  pointer-events: auto;
+  box-sizing: border-box;
 }
 
 #boot-success p { color: var(--success); font-size: 1.2rem; margin-bottom: 16px; }
