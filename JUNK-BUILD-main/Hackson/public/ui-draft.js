@@ -6,6 +6,12 @@ import { initSync, watchGameState, stopGameState, skipTurn, updateGameState } fr
 export function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'))
   document.getElementById(id).classList.remove('hidden')
+  // ★追加：起動画面（screen-boot）の時だけ倍率を1.0にし、それ以外は1.25に戻す
+  if (id === 'screen-boot') {
+    document.documentElement.style.zoom = '1.0';
+  } else {
+    document.documentElement.style.zoom = '1.25';
+  }
 }
 
 // =====================
@@ -1115,8 +1121,6 @@ function startSetPhase() {
 
   const required = ['CPU', 'GPU', 'MEM', 'MB', 'PSU']
   const hand = players[myIndex].hand
-  const canBuild = required.every(t => hand.some(c => getCardType(c) === t))
-  document.getElementById('btn-set-skip').classList.toggle('hidden', canBuild)
 
   showScreen('screen-set')
 }
@@ -1192,8 +1196,21 @@ function clearSlots() {
 }
 
 function checkAllSlotsFilled() {
-  const allFilled = Object.values(currentBuild).every(v => v !== null)
-  document.getElementById('btn-boot').disabled = !allFilled
+  const allFilled = Object.values(currentBuild).every(v => v !== null);
+  const btnBoot = document.getElementById('btn-boot');
+  const btnForce = document.getElementById('btn-force-boot');
+
+  if (allFilled) {
+    // 全て揃ったら「通常の起動」ボタンを表示
+    btnBoot.disabled = false;
+    btnBoot.classList.remove('hidden');
+    btnForce.classList.add('hidden');
+  } else {
+    // 1つでも欠けていたら「強制起動」ボタンを表示
+    btnBoot.disabled = true;
+    btnBoot.classList.add('hidden');
+    btnForce.classList.remove('hidden');
+  }
 }
 
 
