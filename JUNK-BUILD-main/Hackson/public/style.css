@@ -1049,6 +1049,43 @@ h3 {
 /* =====================
    ハプニングカード モーダル
    ===================== */
+/* ===== ハプニング通知トースト ===== */
+#happening-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  min-width: 280px;
+  max-width: 520px;
+  background: var(--bg-secondary, #1c1f26);
+  border: 2px solid var(--warning, #ffa726);
+  border-left-width: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 167, 38, 0.3);
+  color: var(--text-primary, #f5f5f5);
+  padding: 14px 20px;
+  border-radius: 8px;
+  z-index: 1100;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#happening-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#happening-toast .toast-title {
+  display: block;
+  font-weight: bold;
+  color: var(--warning, #ffa726);
+  margin-bottom: 4px;
+}
+
 .happening-overlay {
   position: fixed;
   inset: 0;
@@ -1057,6 +1094,54 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ===== ハプニング ドローフェーズ ===== */
+.happening-draw-title {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: var(--warning, #ffa726);
+}
+
+.happening-draw-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.happening-draw-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--warning, #ffa726);
+  border-radius: 8px;
+  background: rgba(255, 167, 38, 0.07);
+  text-align: left;
+}
+
+.happening-draw-phase-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary, #aaa);
+  text-transform: uppercase;
+}
+
+.happening-draw-card-name {
+  font-size: 1.05rem;
+  font-weight: bold;
+  color: var(--text-primary, #f5f5f5);
+}
+
+.happening-draw-card-desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #ccc);
+}
+
+.happening-draw-note {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #aaa);
 }
 
 .happening-card-container {
