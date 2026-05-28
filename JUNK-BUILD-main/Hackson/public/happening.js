@@ -4,7 +4,7 @@ const happeningPre = [
   {
     id: 'blind_field',
     name: '暗闇のジャンク市',
-    desc: 'このターンのみ！場のパーツはコストと種類しか確認できない！'
+    desc: '次に自分の番が来るまで、他のプレイヤーは場のパーツのコストと種類しか確認できない！（自分は見える）'
   },
   {
     id: 'shuffle_field',

@@ -29,16 +29,23 @@ let currentEvent = null
 
 // フェードインアニメーション管理
 let fieldCardElements = new Map()    // card → DOM要素（フィールド上の永続要素管理）
-let prevHappeningBlindField = false  // blind_field 状態の前回値（変化検出用）
+let prevFieldBlind = false  // blind_field 状態の前回値（変化検出用）
 let prevHandLength = 0             // 自分の手札の前回描画時の枚数
 let prevOpponentHandLengths = {}   // 相手ごとの前回手札枚数 { playerIndex: number }
 
 const HUMAN_INDEX = 0   // P1が人間（ソロモード用）
 const CPU_DELAY_MS = 600  // CPUの自動ピック間隔（ms）
 
-let happeningBlindField = false  // 暗闇のジャンク市: このターンは場の詳細を隠す
+// 暗闇のジャンク市: 使用者のindexを保持。使用者本人は場が見えるが、それ以外は隠れる。
+// 効果は使用者の次の自分番が来るまで持続（その間の他プレイヤーの番を隠す）。null=効果なし
+let blindFieldOwner = null
 let lastHandledTurnKey = ''      // オンライン：処理済みターンキー "turn-round"
 let preHappeningInProgress = false  // オンライン：pre-happening モーダル表示中フラグ
+let drawPhaseDone = false        // オンライン：ハプニングのドローフェーズ表示済みか
+
+// ハプニング使用通知（トースト）
+let pendingHappeningNotice = null  // オンライン：次のFirestore書き込みで全員へ共有する通知
+let lastSeenHappeningTs = 0         // オンライン：表示済み通知のタイムスタンプ
 
 export let myUid = null      // null=ソロモード、UIDあり=オンラインモード
 let onlineTurn = 0         // Firestoreから来るturn（オンラインのみ使用）
@@ -48,6 +55,12 @@ let onlineDraftRound = 1   // Firestoreから来るdraftRound（オンライン�
 export function getMyIndex() {
   if (myUid === null) return HUMAN_INDEX
   return players.findIndex(p => p.id === myUid)
+}
+
+// 暗闇のジャンク市：自分の視点で場が隠れているか
+// （使用者以外には隠れる。使用者本人＝自分の場合は見える）
+function isFieldBlind() {
+  return blindFieldOwner !== null && blindFieldOwner !== getMyIndex()
 }
 
 // オンライン時、Firestoreから受け取った全プレイヤーで上書きする
@@ -70,13 +83,14 @@ function downgradeRel(rel) {
 }
 
 function applyPreEffect(card, playerIndex) {
-  const myIdx = getMyIndex()
+  const myIdx = playerIndex
   const player = players[myIdx]
 
   switch (card.id) {
     case 'blind_field':
-      happeningBlindField = true
-      return '場のパーツの詳細情報がこのターン隠れます...'
+      // 使用者本人は場が見えるが、他のプレイヤーには詳細が隠れる
+      blindFieldOwner = myIdx
+      return '他のプレイヤーには場のパーツの詳細が隠れます！（あなたは見えます）'
 
     case 'shuffle_field': {
       const prevCount = field.length
@@ -97,6 +111,9 @@ function applyPreEffect(card, playerIndex) {
           count++
         }
       })
+      // 既存のフィールドDOM要素をクリアして信頼度バッジを再生成させる
+      for (const [, el] of fieldCardElements) el.remove()
+      fieldCardElements.clear()
       return count > 0 ? `場の${count}枚のパーツの信頼度がアップ！` : '効果対象なし（全てNEW）'
     }
 
@@ -108,6 +125,9 @@ function applyPreEffect(card, playerIndex) {
           count++
         }
       })
+      // 既存のフィールドDOM要素をクリアして信頼度バッジを再生成させる
+      for (const [, el] of fieldCardElements) el.remove()
+      fieldCardElements.clear()
       return count > 0 ? `場の${count}枚のパーツの信頼度がダウン...` : '効果対象なし（全てJUNK）'
     }
 
@@ -175,6 +195,55 @@ function closeHappeningModal() {
   document.getElementById('happening-modal').classList.add('hidden')
 }
 
+// ドラフト開始前：自分のハプニングカードを公開するドローフェーズ
+function showHappeningDrawPhase() {
+  return new Promise(resolve => {
+    const me = players[getMyIndex()]
+    const pre  = me?.happeningPreCard
+    const post = me?.happeningPostCard
+
+    document.getElementById('draw-pre-name').textContent  = pre  ? pre.name  : '（なし）'
+    document.getElementById('draw-pre-desc').textContent  = pre  ? pre.desc  : ''
+    document.getElementById('draw-post-name').textContent = post ? post.name : '（なし）'
+    document.getElementById('draw-post-desc').textContent = post ? post.desc : ''
+
+    const modal = document.getElementById('happening-draw-modal')
+    const okBtn = document.getElementById('happening-draw-ok')
+    modal.classList.remove('hidden')
+    okBtn.onclick = () => {
+      modal.classList.add('hidden')
+      okBtn.onclick = null
+      resolve()
+    }
+  })
+}
+
+// ハプニング使用通知トースト（他プレイヤーの行動を知らせる）
+function showHappeningToast(playerName, cardName, detail) {
+  let toast = document.getElementById('happening-toast')
+  if (!toast) {
+    toast = document.createElement('div')
+    toast.id = 'happening-toast'
+    document.body.appendChild(toast)
+  }
+  toast.innerHTML = ''
+  const title = document.createElement('span')
+  title.className = 'toast-title'
+  title.textContent = `${playerName} が「${cardName}」を発動！`
+  toast.appendChild(title)
+  toast.appendChild(document.createTextNode(detail || ''))
+
+  // 再表示時にアニメーションをやり直す
+  toast.classList.remove('show')
+  void toast.offsetWidth
+  toast.classList.add('show')
+
+  clearTimeout(toast._hideTimer)
+  toast._hideTimer = setTimeout(() => {
+    toast.classList.remove('show')
+  }, 4000)
+}
+
 async function maybeTriggerPreHappening(playerIndex) {
   const player = players[playerIndex]
   if (!player.happeningPreCard) return
@@ -182,9 +251,10 @@ async function maybeTriggerPreHappening(playerIndex) {
   const card = player.happeningPreCard
 
   if (playerIndex !== getMyIndex()) {
-    // CPU：自動使用
+    // CPU：自動使用 → 自分（人間）に通知を表示
     applyPreEffect(card, playerIndex)
     player.happeningPreCard = null
+    showHappeningToast(player.name, card.name, card.desc)
     return
   }
 
@@ -204,6 +274,8 @@ async function maybeTriggerPreHappening(playerIndex) {
       okBtn.classList.add('hidden')
       const resultMsg = applyPreEffect(card, playerIndex)
       if (resultMsg) showHappeningResult(resultMsg)
+      // オンライン：他プレイヤーへ通知を共有
+      pendingHappeningNotice = { byId: myUid, byName: player.name, card: card.name, desc: card.desc, ts: Date.now() }
       okBtn.textContent = '了解！'
       okBtn.classList.remove('hidden')
       okBtn.onclick = () => {
@@ -228,8 +300,11 @@ async function maybeTriggerPostHappening(playerIndex) {
   const card = player.happeningPostCard
 
   if (playerIndex !== getMyIndex()) {
-    // CPU：自動使用（インタラクティブ系は自動スキップ）
-    if (!card.interactive) applyPostAutoEffect(card, playerIndex)
+    // CPU：自動使用（インタラクティブ系は自動スキップ）→ 使ったときだけ通知
+    if (!card.interactive) {
+      applyPostAutoEffect(card, playerIndex)
+      showHappeningToast(player.name, card.name, card.desc)
+    }
     player.happeningPostCard = null
     return
   }
@@ -245,13 +320,16 @@ async function maybeTriggerPostHappening(playerIndex) {
 
   await new Promise(resolve => {
     okBtn.onclick = () => {
-      player.happeningPostCard = null
       skipBtn.classList.add('hidden')
       okBtn.classList.add('hidden')
 
       if (!card.interactive) {
+        // 非インタラクティブ：即時適用してカード消費
+        player.happeningPostCard = null
         const resultMsg = applyPostAutoEffect(card, playerIndex)
         if (resultMsg) showHappeningResult(resultMsg)
+        // オンライン：他プレイヤーへ通知を共有
+        pendingHappeningNotice = { byId: myUid, byName: player.name, card: card.name, desc: card.desc, ts: Date.now() }
         okBtn.textContent = '了解！'
         okBtn.classList.remove('hidden')
         okBtn.onclick = () => {
@@ -262,7 +340,14 @@ async function maybeTriggerPostHappening(playerIndex) {
           resolve()
         }
       } else {
-        showInteractivePostHappening(card, playerIndex).then(() => {
+        // インタラクティブ：選択が完了（used=true）したときだけカード消費
+        // キャンセルや効果対象なし（used=false）の場合はカードを温存
+        showInteractivePostHappening(card, playerIndex).then((used) => {
+          if (used) {
+            player.happeningPostCard = null
+            // オンライン：他プレイヤーへ通知を共有
+            pendingHappeningNotice = { byId: myUid, byName: player.name, card: card.name, desc: card.desc, ts: Date.now() }
+          }
           document.getElementById('draft-budget-amount').textContent =
             `¥${players[getMyIndex()].budget}`
           renderHappeningHand()
@@ -283,24 +368,36 @@ function showInteractivePostHappening(card, playerIndex) {
     const area = document.getElementById('happening-select-area')
     const choices = document.getElementById('happening-choices')
     const stepLabel = document.getElementById('happening-step-label')
+    const skipBtn = document.getElementById('happening-btn-skip')
 
     document.getElementById('happening-btn-ok').classList.add('hidden')
 
-    const done = (msg) => {
+    // 選択画面のキャンセルボタン（押すとカードを消費せずに閉じる＝次のターン以降に使える）
+    skipBtn.textContent = 'キャンセル'
+    skipBtn.classList.remove('hidden')
+    skipBtn.onclick = () => {
+      area.classList.add('hidden')
+      skipBtn.classList.add('hidden')
+      closeHappeningModal()
+      resolve(false)   // 使用せずキャンセル → カードは温存
+    }
+
+    // used=true: 効果を適用してカード消費 / used=false: 効果対象なしでカード温存
+    const done = (msg, used = true) => {
       if (msg) showHappeningResult(msg)
       area.classList.add('hidden')
-      document.getElementById('happening-btn-skip').classList.add('hidden')
+      skipBtn.classList.add('hidden')
       const okBtn = document.getElementById('happening-btn-ok')
       okBtn.textContent = '了解！'
       okBtn.classList.remove('hidden')
-      okBtn.onclick = () => { closeHappeningModal(); resolve() }
+      okBtn.onclick = () => { closeHappeningModal(); resolve(used) }
     }
 
     if (card.id === 'my_rel_up') {
       const upgradeable = player.hand.filter(
         c => c.reliability && c.reliability !== 'new'
       )
-      if (upgradeable.length === 0) { done('信頼度をアップできるパーツがありません'); return }
+      if (upgradeable.length === 0) { done('信頼度をアップできるパーツがありません', false); return }
 
       stepLabel.textContent = 'アップグレードするパーツを選んでください'
       area.classList.remove('hidden')
@@ -322,7 +419,7 @@ function showInteractivePostHappening(card, playerIndex) {
         (p, i) => i !== playerIndex &&
           p.hand.some(c => c.reliability && c.reliability !== 'junk')
       )
-      if (others.length === 0) { done('ダウングレードできる相手がいません'); return }
+      if (others.length === 0) { done('ダウングレードできる相手がいません', false); return }
 
       stepLabel.textContent = '対象のプレイヤーを選んでください'
       area.classList.remove('hidden')
@@ -359,7 +456,7 @@ function showInteractivePostHappening(card, playerIndex) {
       const swappable = myMainParts.filter(myCard =>
         players.some((p, i) => i !== playerIndex && p.hand.some(c => c.type === myCard.type))
       )
-      if (swappable.length === 0) { done('交換できる相手がいません'); return }
+      if (swappable.length === 0) { done('交換できる相手がいません', false); return }
 
       stepLabel.textContent = '交換するパーツを選んでください'
       area.classList.remove('hidden')
@@ -397,15 +494,11 @@ function showInteractivePostHappening(card, playerIndex) {
       })
 
       if (buyable.length === 0) {
-        done(`${neighbor.name}から購入できるパーツがありません（予算不足または重複）`)
+        done(`${neighbor.name}から購入できるパーツがありません（予算不足または重複）`, false)
         return
       }
 
-      const skipBtn = document.getElementById('happening-btn-skip')
-      skipBtn.textContent = 'パスする'
-      skipBtn.classList.remove('hidden')
-      skipBtn.onclick = () => { closeHappeningModal(); resolve() }
-
+      // キャンセルボタンは関数冒頭で設定済み（パス＝カード温存）
       stepLabel.textContent = `${neighbor.name}のパーツを選んでください（定価×1.5）`
       area.classList.remove('hidden')
       choices.innerHTML = ''
@@ -630,17 +723,22 @@ document.getElementById('btn-to-draft').addEventListener('click', async () => {
   draftOrderIndex = 0
   draftRound = 1
   selectedCard = null
-  happeningBlindField = false
+  blindFieldOwner = null
   dealHappeningCards()
 
+
   fieldCardElements = new Map()
-  prevHappeningBlindField = false
+  prevFieldBlind = false
   prevHandLength = 0
   prevOpponentHandLengths = {}
 
   renderDraftScreen()
   showScreen('screen-draft')
+  // ドラフト開始前に、自分のハプニングカードを公開
+  await showHappeningDrawPhase()
   await maybeTriggerPreHappening(draftOrder[0])
+  renderDraftScreen()  // ハプニング効果（blind/shuffle/rel変化）を場に反映
+
 })
 
 // =====================
@@ -687,8 +785,9 @@ function renderField(currentPlayer, isHuman) {
   const currentFieldKeys = new Set(field.map(cardKey))
 
   // blind_field 状態が変化したら既存要素を全破棄して再生成
-  if (happeningBlindField !== prevHappeningBlindField) {
-    prevHappeningBlindField = happeningBlindField
+  const blindNow = isFieldBlind()
+  if (blindNow !== prevFieldBlind) {
+    prevFieldBlind = blindNow
     for (const [, el] of fieldCardElements) el.remove()
     fieldCardElements.clear()
   }
@@ -724,7 +823,7 @@ function renderField(currentPlayer, isHuman) {
       }
     } else {
       // 新規カード：フェードインで追加（アニメーション中は disabled）
-      const el = happeningBlindField ? createBlindCardEl(card) : createCardEl(card)
+      const el = blindNow ? createBlindCardEl(card) : createCardEl(card)
       el.classList.add('disabled', 'card-appear')
       el.style.animationDelay = `${newCardIdx * 55}ms`
       el.addEventListener('animationend', () => {
@@ -831,7 +930,9 @@ function onFieldCardClick(card, el) {
   el.classList.add('selected')
 
   document.getElementById('selected-card-preview').textContent =
-    `選択中: ${card.name}（¥${card.cost}）`
+    isFieldBlind()
+      ? `選択中: ???（¥${card.cost}）`
+      : `選択中: ${card.name}（¥${card.cost}）`
 
   updatePickButton()
 }
@@ -871,7 +972,14 @@ document.getElementById('btn-pick-card').addEventListener('click', async () => {
     if (deck.length > 0) field.push(deck.shift())
     const newTurn = (onlineTurn + 1) % players.length
     const newRound = newTurn === 0 ? onlineDraftRound + 1 : onlineDraftRound
-    await updateGameState({ players, field: [...field], deck: [...deck], turn: newTurn, draftRound: newRound })
+    const pickWrite = { players, field: [...field], deck: [...deck], turn: newTurn, draftRound: newRound }
+    // 終了後ハプニングを使った場合は通知を全員へ共有
+    if (pendingHappeningNotice) {
+      pickWrite.lastHappening = pendingHappeningNotice
+      lastSeenHappeningTs = pendingHappeningNotice.ts  // 自分は二重表示しない
+      pendingHappeningNotice = null
+    }
+    await updateGameState(pickWrite)
   } else {
     const currentIndex = getCurrentTurnIndex()
     // ピックされたカードをフェードアウト（完了を待つ → 完了後にローカル処理）
@@ -962,8 +1070,6 @@ function pickCardLocal(playerIndex, card) {
 // ドラフト：次のターンへ
 // =====================
 function nextDraftTurn() {
-  happeningBlindField = false
-
   draftOrderIndex++
 
   if (draftOrderIndex >= draftOrder.length) {
@@ -979,6 +1085,10 @@ function nextDraftTurn() {
   }
 
   const nextIndex = draftOrder[draftOrderIndex]
+  // 暗闇のジャンク市：使用者の番が再び回ってきたら効果終了
+  if (blindFieldOwner !== null && nextIndex === blindFieldOwner) {
+    blindFieldOwner = null
+  }
   maybeTriggerPreHappening(nextIndex).then(() => renderDraftScreen())
 }
 
@@ -1094,8 +1204,37 @@ const EVENT_LABELS = {
   none: 'イベントなし：通常価格のまま'
 }
 
+// オンライン：自分のターンなら pre-happening を発火（未処理ターンのみ）
+function maybeStartMyPreHappening() {
+  if (myUid === null) return
+  const myIdx = getMyIndex()
+  const turnKey = `${onlineTurn}-${onlineDraftRound}`
+  if (getCurrentTurnIndex() === myIdx && !preHappeningInProgress && turnKey !== lastHandledTurnKey) {
+    lastHandledTurnKey = turnKey
+    preHappeningInProgress = true
+    maybeTriggerPreHappening(myIdx).then(async () => {
+      preHappeningInProgress = false
+      renderHappeningHand()
+      renderDraftScreen()
+      // blindFieldOwner も同期（暗闇のジャンク市の使用状況を全員へ共有）
+      const writeData = {
+        field: [...field], deck: [...deck], players,
+        blindFieldOwner: blindFieldOwner === null ? null : blindFieldOwner
+      }
+      // ハプニング使用通知を全員へ共有
+      if (pendingHappeningNotice) {
+        writeData.lastHappening = pendingHappeningNotice
+        lastSeenHappeningTs = pendingHappeningNotice.ts  // 自分は二重表示しない
+        pendingHappeningNotice = null
+      }
+      await updateGameState(writeData)
+    })
+  }
+}
+
 export function startOnlineGame(uid, isHostPlayer) {
   myUid = uid
+  drawPhaseDone = false
   document.getElementById('btn-to-draft').classList.add('hidden')
 
   let prepScreenShown = false
@@ -1117,6 +1256,13 @@ export function startOnlineGame(uid, isHostPlayer) {
     onlineTurn = room.turn
     onlineDraftRound = room.draftRound || 1
 
+    // 暗闇のジャンク市：使用者をFirestoreから取得（他クライアントの使用状況を反映）
+    blindFieldOwner = (room.blindFieldOwner === undefined ? null : room.blindFieldOwner)
+    // 使用者の番が再び回ってきたら効果終了
+    if (blindFieldOwner !== null && getCurrentTurnIndex() === blindFieldOwner) {
+      blindFieldOwner = null
+    }
+
     // 退避したハプニングカードを復元
     players.forEach(p => {
       if (savedHappening[p.id]) {
@@ -1125,17 +1271,35 @@ export function startOnlineGame(uid, isHostPlayer) {
       }
     })
 
+    // ハプニング使用通知：新しいものが来たら自分以外に表示
+    const notice = room.lastHappening
+    if (notice && notice.ts && notice.ts !== lastSeenHappeningTs) {
+      lastSeenHappeningTs = notice.ts
+      if (notice.byId !== myUid) {
+        showHappeningToast(notice.byName, notice.card, notice.desc)
+      }
+    }
+
     // ホストが「ドラフト開始」を押した後 → 全員がドラフト画面へ
     if (room.draftStarted) {
       if (!draftAnimInitialized) {
         fieldCardElements = new Map()
-        prevHappeningBlindField = false
+        prevFieldBlind = false
         prevHandLength = 0
         prevOpponentHandLengths = {}
         lastHandledTurnKey = ''
         preHappeningInProgress = false
         draftAnimInitialized = true
         dealHappeningCards()
+        // ドラフト開始前に、自分のハプニングカードを公開（完了後に最初のターン処理へ）
+        document.getElementById('draft-event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? '-'
+        renderDraftScreen()
+        showScreen('screen-draft')
+        showHappeningDrawPhase().then(() => {
+          drawPhaseDone = true
+          maybeStartMyPreHappening()
+        })
+        return
       }
       const roundOver = onlineDraftRound > 8
       const allHaveCards = room.players.every(p => p.hand.length >= 8)
@@ -1149,19 +1313,8 @@ export function startOnlineGame(uid, isHostPlayer) {
       renderDraftScreen()
       showScreen('screen-draft')
 
-      // 自分のターン開始時に pre-happening を発火（未処理のターンのみ）
-      const myIdx = getMyIndex()
-      const turnKey = `${onlineTurn}-${onlineDraftRound}`
-      if (getCurrentTurnIndex() === myIdx && !preHappeningInProgress && turnKey !== lastHandledTurnKey) {
-        lastHandledTurnKey = turnKey
-        preHappeningInProgress = true
-        maybeTriggerPreHappening(myIdx).then(async () => {
-          preHappeningInProgress = false
-          renderHappeningHand()
-          renderDraftScreen()
-          await updateGameState({ field: [...field], deck: [...deck], players })
-        })
-      }
+      // ドローフェーズ完了後のみ、自分のターン開始時に pre-happening を発火
+      if (drawPhaseDone) maybeStartMyPreHappening()
       return
     }
 

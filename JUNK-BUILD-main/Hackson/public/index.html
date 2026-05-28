@@ -338,6 +338,30 @@
         <button id="btn-restart" class="btn btn-primary">もう一度遊ぶ</button>
     </div>
 
+    <!-- ===== ハプニングカード ドローフェーズ モーダル ===== -->
+    <div id="happening-draw-modal" class="happening-overlay hidden">
+      <div class="happening-card-container">
+        <div class="happening-phase">ハプニングカード ドローフェーズ</div>
+        <div class="happening-draw-title">あなたのハプニングカードはこちら！</div>
+        <div class="happening-draw-cards">
+          <div class="happening-draw-card">
+            <span class="happening-draw-phase-label">ターン開始前に使用</span>
+            <span class="happening-draw-card-name" id="draw-pre-name"></span>
+            <span class="happening-draw-card-desc" id="draw-pre-desc"></span>
+          </div>
+          <div class="happening-draw-card">
+            <span class="happening-draw-phase-label">ターン終了後に使用</span>
+            <span class="happening-draw-card-name" id="draw-post-name"></span>
+            <span class="happening-draw-card-desc" id="draw-post-desc"></span>
+          </div>
+        </div>
+        <div class="happening-draw-note">各カードは1ゲームに1回だけ、好きなターンで使えます。</div>
+        <div class="happening-btns">
+          <button id="happening-draw-ok" class="btn btn-primary">ドラフト開始！</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== ハプニングカード モーダル ===== -->
     <div id="happening-modal" class="happening-overlay hidden">
       <div class="happening-card-container">
@@ -372,5 +396,3 @@
     <script src="ui-3d.js"></script>
 </body>
 </html>
-
-
