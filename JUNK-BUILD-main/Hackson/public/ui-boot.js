@@ -9,9 +9,9 @@ const HUMAN_INDEX = 0
 // =====================
 // 状態
 // =====================
-let bootPlayer      = null   // 現在起動処理中のプレイヤー
-let usedDebug       = false  // 起死回生デバッグを使ったか
-let allFinalScores  = []     // 全プレイヤーの最終スコア記録用
+let bootPlayer      = null
+let usedDebug       = false
+let allFinalScores  = []
 
 // =====================
 // 諦めスキップ共通処理
@@ -57,63 +57,74 @@ function startBoot(player) {
 }
 
 // =====================
-// BIOS起動アニメーション
+// BIOS起動アニメーション (3D連動＆爆発追加)
 // =====================
 function runBiosAnimation(build) {
-  const log = document.getElementById('bios-log')
-  log.innerHTML = ''
-  document.getElementById('boot-result').classList.add('hidden')
-  document.getElementById('boot-success').classList.add('hidden')
-  document.getElementById('boot-failure').classList.add('hidden')
+  const log = document.getElementById('bios-log'); 
+  log.innerHTML = '';
+  document.getElementById('boot-result').classList.add('hidden');
+  document.getElementById('boot-success').classList.add('hidden');
+  document.getElementById('boot-failure').classList.add('hidden');
 
-  // ★ 3Dモデルのパーツ位置をリセット
   if (window.resetParts3D) window.resetParts3D();
 
-  const compatible = checkCompatibility(build)
-  const reliable   = compatible ? reliabilityCheck(build) : false
-  const lines = makeBiosLines(build, compatible, reliable)
+  const missing = !build.motherboard || !build.cpu || !build.gpu || !build.memory || !build.psu;
+  const compatible = missing ? false : checkCompatibility(build); 
+  const reliable = missing ? false : (compatible ? reliabilityCheck(build) : false);
+  
+  const lines = makeBiosLines(build, compatible, reliable, missing);
 
   let i = 0;
   function showNextLine() {
     if (i >= lines.length) {
       setTimeout(() => {
-        // ★ 起動成功時は最後に一斉フラッシュの3Dエフェクトを再生
-        if (compatible && reliable && window.playFinalBootEffect3D) {
+        if (compatible && reliable && !missing && window.playFinalBootEffect3D) {
           window.playFinalBootEffect3D().then(() => {
-            showBootResult(compatible && reliable, compatible)
+            showBootResult(true, true);
           });
         } else {
-          showBootResult(compatible && reliable, compatible)
+          showBootResult(false, compatible, missing);
         }
       }, 600);
       return;
     }
 
     const text = lines[i];
-    const div = document.createElement('div')
-    div.className = 'bios-line'
-    div.textContent = text
-    div.style.animationDelay = '0s'
-    log.appendChild(div)
+    const div = document.createElement('div'); 
+    div.className = 'bios-line'; 
+    div.textContent = text;
+    div.style.animationDelay = '0s';
+    log.appendChild(div);
+
+    // ★爆発判定！
+    if (text === 'SYSTEM OVERLOAD...') {
+      if (window.playExplosionEffect3D) {
+        window.playExplosionEffect3D().then(() => {
+            showBootResult(false, compatible, missing); 
+        });
+      } else {
+        showBootResult(false, compatible, missing);
+      }
+      return; 
+    }
 
     let waitTime = 200;
 
-    // ★ テキストに合わせて該当パーツの3Dアニメーションを呼び出す
-    if (text.startsWith('CPU detected')) {
-      if (window.assemblePart3D) window.assemblePart3D('cpu');
-      waitTime = 600;
+    if (text.startsWith('Motherboard')) {
+      if (window.assemblePart3D && build.motherboard) window.assemblePart3D('motherboard', build.motherboard);
+      waitTime = 1500;
+    } else if (text.startsWith('CPU detected')) {
+      if (window.assemblePart3D && build.cpu) window.assemblePart3D('cpu', build.cpu);
+      waitTime = 1500;
     } else if (text.startsWith('GPU detected')) {
-      if (window.assemblePart3D) window.assemblePart3D('gpu');
-      waitTime = 600;
+      if (window.assemblePart3D && build.gpu) window.assemblePart3D('gpu', build.gpu);
+      waitTime = 1500;
     } else if (text.startsWith('Memory')) {
-      if (window.assemblePart3D) window.assemblePart3D('memory');
-      waitTime = 600;
-    } else if (text.startsWith('Motherboard')) {
-      if (window.assemblePart3D) window.assemblePart3D('motherboard');
-      waitTime = 600;
+      if (window.assemblePart3D && build.memory) window.assemblePart3D('memory', build.memory);
+      waitTime = 1500;
     } else if (text.startsWith('PSU')) {
-      if (window.assemblePart3D) window.assemblePart3D('psu');
-      waitTime = 600;
+      if (window.assemblePart3D && build.psu) window.assemblePart3D('psu', build.psu);
+      waitTime = 1500;
     }
 
     i++;
@@ -123,54 +134,51 @@ function runBiosAnimation(build) {
   showNextLine();
 }
 
-function makeBiosLines(build, compatible, reliable) {
-  const lines = []
-  lines.push('JUNK BUILD BIOS v1.0.0')
-  lines.push('Initializing hardware...')
-  lines.push(`CPU detected : ${build.cpu?.name ?? 'NONE'}`)
-  lines.push(`GPU detected : ${build.gpu?.name ?? 'NONE'}`)
-  lines.push(`Memory       : ${build.memory?.name ?? 'NONE'}`)
-  lines.push(`Motherboard  : ${build.motherboard?.name ?? 'NONE'}`)
-  lines.push(`PSU          : ${build.psu?.name ?? 'NONE'}`)
-  lines.push('Checking compatibility...')
+function makeBiosLines(build, comp, rel, missing) {
+  const l = ['JUNK BUILD BIOS v1.0.0', 'Initializing hardware...'];
+  
+  l.push(`Motherboard : ${build.motherboard ? build.motherboard.name : 'MISSING!'}`);
+  l.push(`CPU detected : ${build.cpu ? build.cpu.name : 'MISSING!'}`);
+  l.push(`Memory : ${build.memory ? build.memory.name : 'MISSING!'}`);
+  l.push(`GPU detected : ${build.gpu ? build.gpu.name : 'MISSING!'}`);
+  l.push(`PSU : ${build.psu ? build.psu.name : 'MISSING!'}`);
+  
+  l.push('Checking compatibility...');
 
-  if (!compatible) {
-    lines.push('ERROR: Compatibility check FAILED.')
-    lines.push('> Socket mismatch or insufficient power.')
-    return lines
+  if (missing) {
+      return [...l, 'FATAL ERROR: Essential parts are missing!', 'SYSTEM OVERLOAD...'];
   }
 
-  lines.push('Compatibility OK.')
-  lines.push('Running reliability check...')
-
-  if (!reliable) {
-    lines.push('ERROR: Hardware fault detected.')
-    lines.push('> System cannot boot.')
-    return lines
-  }
-
-  lines.push('All checks passed.')
-  lines.push('Booting OS...')
-  lines.push('Boot successful.')
-  return lines
+  if (!comp) return [...l, 'ERROR: Compatibility check FAILED.'];
+  
+  l.push('Compatibility OK.', 'Running reliability check...');
+  
+  if (!rel) return [...l, 'ERROR: Hardware fault detected.', 'SYSTEM OVERLOAD...'];
+  
+  return [...l, 'All checks passed.', 'Booting OS...', 'Boot successful.'];
 }
 
 // =====================
 // 起動結果の表示
 // =====================
-function showBootResult(success, compatible) {
+function showBootResult(success, compatible, missing = false) {
   document.getElementById('boot-result').classList.remove('hidden')
 
   if (success) {
     document.getElementById('boot-success').classList.remove('hidden')
   } else {
     document.getElementById('boot-failure').classList.remove('hidden')
-    const reason = compatible
-      ? 'パーツの不具合により起動に失敗しました。'
-      : 'パーツの互換性エラーにより起動に失敗しました。'
+    
+    let reason = "";
+    if (missing) {
+      reason = 'パーツ不足による過電流で起動に失敗しました。';
+    } else {
+      reason = compatible
+        ? 'パーツの不具合により起動に失敗しました。'
+        : 'パーツの互換性エラーにより起動に失敗しました。';
+    }
     document.getElementById('boot-failure-reason').textContent = reason
 
-    // 起死回生デバッグ済みなら再挑戦ボタンを隠す
     if (usedDebug) {
       document.getElementById('btn-debug').classList.add('hidden')
     } else {
@@ -205,7 +213,6 @@ function showDebugScreen() {
   usedDebug = true
   showScreen('screen-debug')
 
-  // 山札から1枚ドロー（deckはui-draft.jsで管理）
   if (deck.length > 0) {
     const drawn = deck.shift()
     bootPlayer.hand.push(drawn)
@@ -218,7 +225,6 @@ function renderDebugHand() {
   const container = document.getElementById('debug-hand-cards')
   container.innerHTML = ''
 
-  // スロットをリセット
   ;['cpu', 'gpu', 'memory', 'motherboard', 'psu'].forEach(key => {
     const slotCard = document.querySelector(`#debug-slot-${key} .slot-card`)
     if (slotCard) {
@@ -228,6 +234,8 @@ function renderDebugHand() {
   })
 
   const debugBuild = { cpu: null, gpu: null, memory: null, motherboard: null, psu: null }
+  
+  bootPlayer.build = { ...debugBuild }
 
   bootPlayer.hand.forEach(card => {
     const el      = createCardEl(card)
@@ -236,7 +244,6 @@ function renderDebugHand() {
 
     if (slotKey) {
       el.addEventListener('click', () => {
-        // 同スロットに既存カードがあれば手札に戻す
         if (debugBuild[slotKey]) {
           const prevCard = debugBuild[slotKey]
           container.querySelectorAll('.card').forEach(c => {
@@ -251,19 +258,13 @@ function renderDebugHand() {
         el.style.opacity       = '0.35'
         el.style.pointerEvents = 'none'
 
-        // スロット表示を更新
         const slotCard = document.querySelector(`#debug-slot-${slotKey} .slot-card`)
         if (slotCard) {
           slotCard.textContent = card.name
           slotCard.classList.add('filled')
         }
 
-        // 全スロット揃ったら再起動ボタン有効化
-        const filled = Object.values(debugBuild).every(v => v !== null)
-        document.getElementById('btn-debug-boot').disabled = !filled
-        if (filled) {
-          bootPlayer.build = { ...debugBuild }
-        }
+        bootPlayer.build = { ...debugBuild }
       })
     } else {
       el.style.opacity = '0.5'
@@ -272,16 +273,18 @@ function renderDebugHand() {
     container.appendChild(el)
   })
 
-  document.getElementById('btn-debug-boot').disabled = true
+  // ★これで「再起動」ボタンが常に押せるようになります
+  document.getElementById('btn-debug-boot').disabled = false
 }
 
+// ★抜けていた「再起動」ボタンのイベントリスナーを復活
 document.getElementById('btn-debug-boot').addEventListener('click', () => {
   showScreen('screen-boot')
   runBiosAnimation(bootPlayer.build)
 })
 
 // =====================
-// ベンチマーク画面
+// ベンチマーク画面（★復活！）
 // =====================
 function showBenchmarkScreen(player, penaltyApplied) {
   showScreen('screen-benchmark')
@@ -293,15 +296,13 @@ function showBenchmarkScreen(player, penaltyApplied) {
   const maxScore = cpuScore + gpuScore
 
   let totalScore = benchmark(build)
-  totalScore = synergyBonus(totalScore, build)  // シナジーボーナス
-  totalScore = powerBonus(totalScore, build)    // 電源ボーナス 
+  totalScore = synergyBonus(totalScore, build)
+  totalScore = powerBonus(totalScore, build)
 
-  
   if (penaltyApplied) {
-    totalScore = Math.floor(totalScore * 0.7)   // デバッグペナルティ30%
+    totalScore = Math.floor(totalScore * 0.7)
   }
 
-  // スコアバーをアニメーション表示
   setTimeout(() => {
     const cpuPct = maxScore > 0 ? (cpuScore / maxScore * 100) : 0
     const gpuPct = maxScore > 0 ? (gpuScore / maxScore * 100) : 0
@@ -319,7 +320,6 @@ function showBenchmarkScreen(player, penaltyApplied) {
     document.getElementById('val-total-score').textContent = Math.floor(totalScore).toLocaleString()
   }, 100)
 
-  // ボタン押下時にスコアを保持して得点変動へ
   document.getElementById('btn-to-bonus').onclick = () => {
     showBonusScreen(player, Math.floor(totalScore))
   }
@@ -338,7 +338,6 @@ function showBonusScreen(player, baseScore) {
 
   let multiplier = 1
 
-  // 電源ボーナス
   const psuBonus = { Bronze: 0.02, Gold: 0.05, Platinum: 0.08 }
   const psuRate  = psuBonus[build.psu?.rating] ?? 0
   if (psuRate > 0) {
@@ -346,14 +345,12 @@ function showBonusScreen(player, baseScore) {
     addBonusRow(details, `電源品質（${build.psu.rating}）`, `+${psuRate * 100}%`)
   }
 
-  // メモリ容量ボーナス
   const memRate = (build.memory?.capacity ?? 0) * 0.005
   if (memRate > 0) {
     multiplier += memRate
     addBonusRow(details, `メモリ容量（${build.memory.capacity}GB）`, `+${memRate * 100}%`)
   }
 
-  // サポートカードボーナス
   player.hand.forEach(c => {
     if (c.effect === '5%プラス') {
       multiplier += 0.05
@@ -381,12 +378,11 @@ function addBonusRow(container, label, value) {
 }
 
 // =====================
-// 最終結果画面（ui-draft.jsからも呼ばれる）
+// 最終結果画面
 // =====================
 function showFinalResult() {
   showScreen('screen-result')
 
-  // スコア順にソート
   const ranking = [...players].sort((a, b) => b.score - a.score)
 
   const rankingEl = document.getElementById('result-ranking')
@@ -410,18 +406,18 @@ function showFinalResult() {
 // PC組み立て → 起動
 // =====================
 document.getElementById('btn-boot').addEventListener('click', () => {
-  players[getMyIndex()].build = { ...currentBuild }
-  startBoot(players[getMyIndex()])
-})
+  players[getMyIndex()].build = { ...currentBuild };
+  startBoot(players[getMyIndex()]);
+});
 
-document.getElementById('btn-set-skip').addEventListener('click', () => {
-  skipToResult(players[getMyIndex()])
-})
+document.getElementById('btn-force-boot').addEventListener('click', () => {
+  players[getMyIndex()].build = { ...currentBuild };
+  startBoot(players[getMyIndex()]);
+});
 
 // =====================
 // もう一度遊ぶ
 // =====================
 document.getElementById('btn-restart').addEventListener('click', () => {
-  // ページをリロードして全状態をリセット
   location.reload()
 })
