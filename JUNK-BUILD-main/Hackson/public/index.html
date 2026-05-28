@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.25">
@@ -11,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
+
 <body>
 
     <!-- ===== タイトル画面 ===== -->
@@ -75,83 +77,83 @@
 
     <!-- ===== ドラフト画面 ===== -->
     <div id="screen-draft" class="screen hidden">
-      <div id="draft-board">
+        <div id="draft-board">
 
-        <!-- 左上：ラウンド数 -->
-        <div id="draft-corner-tl">
-          <span class="corner-label">ROUND</span>
-          <span id="draft-round">1</span>
+            <!-- 左上：ラウンド数 -->
+            <div id="draft-corner-tl">
+                <span class="corner-label">ROUND</span>
+                <span id="draft-round">1</span>
+            </div>
+
+            <!-- 上：対戦相手の手札 -->
+            <div id="opponent-top" class="opponent-zone hidden">
+                <div class="opp-hand-cards"></div>
+                <div class="opponent-info">
+                    <span class="opp-name"></span>
+                </div>
+            </div>
+
+            <!-- 右上：市場イベント -->
+            <div id="draft-corner-tr">
+                <span class="corner-label">市場イベント</span>
+                <span id="draft-event-display">-</span>
+            </div>
+
+            <!-- 左：対戦相手の手札 -->
+            <div id="opponent-left" class="opponent-zone hidden">
+                <div class="opp-hand-cards"></div>
+                <div class="opponent-info">
+                    <span class="opp-name"></span>
+                </div>
+            </div>
+
+            <!-- 中央：場のカード -->
+            <div id="draft-center">
+                <div id="field-effect-text"></div>
+                <div id="field-cards"></div>
+                <div id="field-announce-text"></div>
+                <div id="happening-hand">
+                    <span class="happening-hand-label">ハプニングカード:</span>
+                    <span class="happening-hand-item">
+                        <span class="happening-hand-phase">開始前</span>
+                        <span id="happening-hand-pre">---</span>
+                    </span>
+                    <span class="happening-hand-item">
+                        <span class="happening-hand-phase">終了後</span>
+                        <span id="happening-hand-post">---</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 右：対戦相手の手札 -->
+            <div id="opponent-right" class="opponent-zone hidden">
+                <div class="opp-hand-cards"></div>
+                <div class="opponent-info">
+                    <span class="opp-name"></span>
+                </div>
+            </div>
+
+            <!-- 左下：自分の所持金 -->
+            <div id="draft-corner-bl">
+                <span class="corner-label">所持金</span>
+                <span id="draft-budget-amount">¥130</span>
+            </div>
+
+            <!-- 下：自分の手札 -->
+            <div id="my-hand-zone">
+                <div id="hand-cards"></div>
+            </div>
+
+            <!-- 右下：「このカードを取る」＋SKIPボタン -->
+            <div id="draft-corner-br">
+                <div id="draft-actions">
+                    <div id="selected-card-preview"></div>
+                    <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
+                </div>
+                <button id="btn-skip-turn" class="btn btn-secondary hidden">SKIP</button>
+            </div>
+
         </div>
-
-        <!-- 上：対戦相手の手札 -->
-        <div id="opponent-top" class="opponent-zone hidden">
-          <div class="opp-hand-cards"></div>
-          <div class="opponent-info">
-            <span class="opp-name"></span>
-          </div>
-        </div>
-
-        <!-- 右上：市場イベント -->
-        <div id="draft-corner-tr">
-          <span class="corner-label">市場イベント</span>
-          <span id="draft-event-display">-</span>
-        </div>
-
-        <!-- 左：対戦相手の手札 -->
-        <div id="opponent-left" class="opponent-zone hidden">
-          <div class="opp-hand-cards"></div>
-          <div class="opponent-info">
-            <span class="opp-name"></span>
-          </div>
-        </div>
-
-        <!-- 中央：場のカード -->
-        <div id="draft-center">
-          <div id="field-effect-text"></div>
-          <div id="field-cards"></div>
-          <div id="field-announce-text"></div>
-          <div id="happening-hand">
-            <span class="happening-hand-label">ハプニングカード:</span>
-            <span class="happening-hand-item">
-              <span class="happening-hand-phase">開始前</span>
-              <span id="happening-hand-pre">---</span>
-            </span>
-            <span class="happening-hand-item">
-              <span class="happening-hand-phase">終了後</span>
-              <span id="happening-hand-post">---</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- 右：対戦相手の手札 -->
-        <div id="opponent-right" class="opponent-zone hidden">
-          <div class="opp-hand-cards"></div>
-          <div class="opponent-info">
-            <span class="opp-name"></span>
-          </div>
-        </div>
-
-        <!-- 左下：自分の所持金 -->
-        <div id="draft-corner-bl">
-          <span class="corner-label">所持金</span>
-          <span id="draft-budget-amount">¥130</span>
-        </div>
-
-        <!-- 下：自分の手札 -->
-        <div id="my-hand-zone">
-          <div id="hand-cards"></div>
-        </div>
-
-        <!-- 右下：「このカードを取る」＋SKIPボタン -->
-        <div id="draft-corner-br">
-          <div id="draft-actions">
-            <div id="selected-card-preview"></div>
-            <button id="btn-pick-card" class="btn btn-primary" disabled>このカードを取る</button>
-          </div>
-          <button id="btn-skip-turn" class="btn btn-secondary hidden">SKIP</button>
-        </div>
-
-      </div>
     </div>
 
     <!-- ===== セット画面（PC組み立て） ===== -->
@@ -196,18 +198,23 @@
 
         <div id="set-actions">
             <div id="compatibility-check-result"></div>
+            <!-- ▼ 変更：ボタンを2種類用意し、状況によって出し分ける -->
             <button id="btn-boot" class="btn btn-primary" disabled>PCを起動する</button>
-            <button id="btn-set-skip" class="btn btn-secondary hidden">諦めてスキップ</button>
+            <button id="btn-force-boot" class="btn btn-danger btn-blink hidden">⚠️ 強制起動 </button>
         </div>
     </div>
 
     <!-- ===== 起動演出画面 ===== -->
     <div id="screen-boot" class="screen hidden">
-        
+
         <!-- ▼ 追加：3D演出用キャンバスとエフェクト -->
         <div id="canvas-container"></div>
         <div id="flash-overlay"></div>
         <div id="effect-text"></div>
+        <!-- ▼ 爆発用の赤いフラッシュを追加 ▼ -->
+        <div id="explosion-overlay"
+            style="position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:red; opacity:0; pointer-events:none; z-index:9998;">
+        </div>
 
         <!-- 既存のBIOS画面をラッパーで囲む -->
         <div id="bios-screen-wrapper">
@@ -340,52 +347,52 @@
 
     <!-- ===== ハプニングカード ドローフェーズ モーダル ===== -->
     <div id="happening-draw-modal" class="happening-overlay hidden">
-      <div class="happening-card-container">
-        <div class="happening-phase">ハプニングカード ドローフェーズ</div>
-        <div class="happening-draw-title">あなたのハプニングカードはこちら！</div>
-        <div class="happening-draw-cards">
-          <div class="happening-draw-card">
-            <span class="happening-draw-phase-label">ターン開始前に使用</span>
-            <span class="happening-draw-card-name" id="draw-pre-name"></span>
-            <span class="happening-draw-card-desc" id="draw-pre-desc"></span>
-          </div>
-          <div class="happening-draw-card">
-            <span class="happening-draw-phase-label">ターン終了後に使用</span>
-            <span class="happening-draw-card-name" id="draw-post-name"></span>
-            <span class="happening-draw-card-desc" id="draw-post-desc"></span>
-          </div>
+        <div class="happening-card-container">
+            <div class="happening-phase">ハプニングカード ドローフェーズ</div>
+            <div class="happening-draw-title">あなたのハプニングカードはこちら！</div>
+            <div class="happening-draw-cards">
+                <div class="happening-draw-card">
+                    <span class="happening-draw-phase-label">ターン開始前に使用</span>
+                    <span class="happening-draw-card-name" id="draw-pre-name"></span>
+                    <span class="happening-draw-card-desc" id="draw-pre-desc"></span>
+                </div>
+                <div class="happening-draw-card">
+                    <span class="happening-draw-phase-label">ターン終了後に使用</span>
+                    <span class="happening-draw-card-name" id="draw-post-name"></span>
+                    <span class="happening-draw-card-desc" id="draw-post-desc"></span>
+                </div>
+            </div>
+            <div class="happening-draw-note">各カードは1ゲームに1回だけ、好きなターンで使えます。</div>
+            <div class="happening-btns">
+                <button id="happening-draw-ok" class="btn btn-primary">ドラフト開始！</button>
+            </div>
         </div>
-        <div class="happening-draw-note">各カードは1ゲームに1回だけ、好きなターンで使えます。</div>
-        <div class="happening-btns">
-          <button id="happening-draw-ok" class="btn btn-primary">ドラフト開始！</button>
-        </div>
-      </div>
     </div>
 
     <!-- ===== ハプニングカード モーダル ===== -->
     <div id="happening-modal" class="happening-overlay hidden">
-      <div class="happening-card-container">
-        <div class="happening-phase" id="happening-phase">ターン開始前ハプニング！</div>
-        <div class="happening-exclaim">!! HAPPENING !!</div>
-        <div class="happening-card-name" id="happening-card-name"></div>
-        <div class="happening-card-desc" id="happening-card-desc"></div>
-        <div id="happening-effect-result" class="happening-effect-result hidden"></div>
-        <div id="happening-select-area" class="hidden">
-          <div id="happening-step-label" class="happening-step-label"></div>
-          <div id="happening-choices" class="happening-choices"></div>
+        <div class="happening-card-container">
+            <div class="happening-phase" id="happening-phase">ターン開始前ハプニング！</div>
+            <div class="happening-exclaim">!! HAPPENING !!</div>
+            <div class="happening-card-name" id="happening-card-name"></div>
+            <div class="happening-card-desc" id="happening-card-desc"></div>
+            <div id="happening-effect-result" class="happening-effect-result hidden"></div>
+            <div id="happening-select-area" class="hidden">
+                <div id="happening-step-label" class="happening-step-label"></div>
+                <div id="happening-choices" class="happening-choices"></div>
+            </div>
+            <div class="happening-btns">
+                <button id="happening-btn-ok" class="btn btn-primary">了解！</button>
+                <button id="happening-btn-skip" class="btn btn-secondary hidden">スキップ</button>
+            </div>
         </div>
-        <div class="happening-btns">
-          <button id="happening-btn-ok" class="btn btn-primary">了解！</button>
-          <button id="happening-btn-skip" class="btn btn-secondary hidden">スキップ</button>
-        </div>
-      </div>
     </div>
 
     <!-- ===== スクリプト（読み込み順序厳守） ===== -->
     <!-- 5/17 21:49 追加分 -->
-     <script type="module" src="firebase-config.js"></script>
-     <script type="module" src="lobby.js"></script>
-     <!-- 5/17 21:49 追加分ここまで -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="lobby.js"></script>
+    <!-- 5/17 21:49 追加分ここまで -->
     <script src="cards.js"></script>
     <script src="Game.js"></script>
     <script src="happening.js"></script>
@@ -395,4 +402,5 @@
     <script type="module" src="ui-boot.js"></script>
     <script src="ui-3d.js"></script>
 </body>
+
 </html>
