@@ -22,21 +22,24 @@
         <button id="btn-start" class="btn btn-primary">ひとりで遊ぶ（CPU対戦）</button>
         <button id="btn-online" class="btn btn-secondary">オンラインで遊ぶ</button>
     </div>
-    <!-- 5/15 21:57 追加分-->
     <!-- ===== ロビー画面 ===== -->
     <div id="screen-lobby" class="screen hidden">
         <h2>LOBBY</h2>
 
-        <div id="lobby-name-section">
-            <label for="input-player-name">プレイヤー名</label>
-            <input type="text" id="input-player-name" placeholder="名前を入力（最大10文字）" maxlength="10">
-        </div>
+        <div id="lobby-card">
+            <div class="lobby-field">
+                <label for="input-player-name">プレイヤー名</label>
+                <input type="text" id="input-player-name" placeholder="名前を入力（最大10文字）" maxlength="10">
+            </div>
 
-        <div id="lobby-actions">
-            <button id="btn-create-room" class="btn btn-primary">ルームを作成する</button>
-            <div id="lobby-join-section">
+            <div class="lobby-field">
+                <label for="input-room-id">ルームID（参加する場合）</label>
                 <input type="text" id="input-room-id" placeholder="ルームID（6文字）" maxlength="6">
-                <button id="btn-join-room" class="btn btn-secondary">参加する</button>
+            </div>
+
+            <div id="lobby-buttons">
+                <button id="btn-create-room" class="btn btn-primary">ルーム作成</button>
+                <button id="btn-join-room" class="btn btn-secondary">ルームに参加</button>
             </div>
         </div>
 
@@ -50,7 +53,6 @@
             <button id="btn-start-game" class="btn btn-primary hidden">ゲーム開始</button>
         </div>
     </div>
-    <!-- 5/15 21:57 追加分ここまで -->
 
     <!-- ===== 準備画面 ===== -->
     <div id="screen-prep" class="screen hidden">
