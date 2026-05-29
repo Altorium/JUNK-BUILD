@@ -1305,3 +1305,61 @@ h3 {
     color: #ffaaaa;
   }
 }
+
+/* =====================
+   カットイン演出
+   ===================== */
+#cutin-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#cutin-band {
+  width: 120%;
+  position: relative;
+  left: -10%;
+  padding: 28px 80px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(6, 21, 42, 0.97) 12%,
+    rgba(0, 30, 60, 0.99) 50%,
+    rgba(6, 21, 42, 0.97) 88%,
+    transparent 100%
+  );
+  border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  box-shadow: 0 0 40px rgba(0, 212, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-120%);
+}
+
+#cutin-band.cutin-animate {
+  animation: cutinSlide 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#cutin-text {
+  font-size: 3.2rem;
+  font-weight: bold;
+  color: var(--accent);
+  text-shadow: 0 0 24px var(--accent), 0 0 60px rgba(0, 212, 255, 0.4);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@keyframes cutinSlide {
+  0%   { transform: translateX(-120%); }
+  22%  { transform: translateX(0); }
+  78%  { transform: translateX(0); }
+  100% { transform: translateX(120%); }
+}

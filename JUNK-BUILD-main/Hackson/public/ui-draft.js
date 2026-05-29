@@ -15,6 +15,24 @@ export function showScreen(id) {
 }
 
 // =====================
+// カットイン演出
+// =====================
+export function showCutIn(text) {
+  return new Promise(resolve => {
+    const band = document.getElementById('cutin-band')
+    const textEl = document.getElementById('cutin-text')
+    textEl.textContent = text
+    band.classList.remove('cutin-animate')
+    void band.offsetWidth
+    band.classList.add('cutin-animate')
+    band.addEventListener('animationend', () => {
+      band.classList.remove('cutin-animate')
+      resolve()
+    }, { once: true })
+  })
+}
+
+// =====================
 // ゲーム状態
 // =====================
 export let players = []
@@ -56,6 +74,7 @@ let lastSeenHappeningTs = 0         // オンライン：表示済み通知の�
 export let myUid = null      // null=ソロモード、UIDあり=オンラインモード
 let onlineTurn = 0         // Firestoreから来るturn（オンラインのみ使用）
 let onlineDraftRound = 1   // Firestoreから来るdraftRound（オンラインのみ使用）
+let prevOnlineDraftRound = 0  // ラウンド変化検出用
 
 // 「自分」のプレイヤーインデックスを返す
 export function getMyIndex() {
@@ -740,8 +759,11 @@ document.getElementById('btn-to-draft').addEventListener('click', async () => {
 
   renderDraftScreen()
   showScreen('screen-draft')
+  await showCutIn('Game Start!')
   // ドラフト開始前に、自分のハプニングカードを公開
   await showHappeningDrawPhase()
+  await showCutIn('Draft Phase!')
+  await showCutIn('Round.01')
   await maybeTriggerPreHappening(draftOrder[0])
   renderDraftScreen()  // ハプニング効果（blind/shuffle/rel変化）を場に反映
 
@@ -1075,13 +1097,16 @@ function pickCardLocal(playerIndex, card) {
 // =====================
 // ドラフト：次のターンへ
 // =====================
-function nextDraftTurn() {
+async function nextDraftTurn() {
   draftOrderIndex++
 
   if (draftOrderIndex >= draftOrder.length) {
     draftOrderIndex = 0
     draftRound++
     draftOrder.reverse()
+    if (draftRound <= 8) {
+      await showCutIn(`Round.${String(draftRound).padStart(2, '0')}`)
+    }
   }
 
   // 全員の手札が8枚になったらドラフト終了
@@ -1095,13 +1120,14 @@ function nextDraftTurn() {
   if (blindFieldOwner !== null && nextIndex === blindFieldOwner) {
     blindFieldOwner = null
   }
-  maybeTriggerPreHappening(nextIndex).then(() => renderDraftScreen())
+  await maybeTriggerPreHappening(nextIndex)
+  renderDraftScreen()
 }
 
 // =====================
 // セットフェーズ開始
 // =====================
-function startSetPhase() {
+async function startSetPhase() {
   const myIndex = getMyIndex()
 
   // ソロモードのみCPUプレイヤーを自動組み立て
@@ -1119,9 +1145,7 @@ function startSetPhase() {
   document.getElementById('compatibility-check-result').textContent = ''
   document.getElementById('btn-boot').disabled = true
 
-  const required = ['CPU', 'GPU', 'MEM', 'MB', 'PSU']
-  const hand = players[myIndex].hand
-
+  await showCutIn('Set Phase')
   showScreen('screen-set')
 }
 
@@ -1273,6 +1297,12 @@ export function startOnlineGame(uid, isHostPlayer) {
     onlineTurn = room.turn
     onlineDraftRound = room.draftRound || 1
 
+    // オンライン：ラウンド変化を検出してカットイン（ラウンド2以降）
+    if (room.draftStarted && draftAnimInitialized && onlineDraftRound > 1 && onlineDraftRound !== prevOnlineDraftRound) {
+      showCutIn(`Round.${String(onlineDraftRound).padStart(2, '0')}`)
+    }
+    prevOnlineDraftRound = onlineDraftRound
+
     // 暗闇のジャンク市：使用者をFirestoreから取得（他クライアントの使用状況を反映）
     blindFieldOwner = (room.blindFieldOwner === undefined ? null : room.blindFieldOwner)
     // 使用者の番が再び回ってきたら効果終了
@@ -1299,7 +1329,7 @@ export function startOnlineGame(uid, isHostPlayer) {
 
     // ホストが「ドラフト開始」を押した後 → 全員がドラフト画面へ
     if (room.draftStarted) {
-      if (!draftAnimInitialized) {
+      if (!draftAnimInitialized) { //「初回だけ実行する」ためのガード
         fieldCardElements = new Map()
         prevFieldBlind = false
         prevHandLength = 0
@@ -1312,7 +1342,14 @@ export function startOnlineGame(uid, isHostPlayer) {
         document.getElementById('draft-event-display').textContent = EVENT_LABELS[room.event] ?? room.event ?? '-'
         renderDraftScreen()
         showScreen('screen-draft')
-        showHappeningDrawPhase().then(() => {
+        prevOnlineDraftRound = 1
+        showCutIn('Game Start!').then(() =>
+          showHappeningDrawPhase()
+        ).then(() =>
+          showCutIn('Draft Phase!')
+        ).then(() =>
+          showCutIn('Round.01')
+        ).then(() => {
           drawPhaseDone = true
           maybeStartMyPreHappening()
         })
