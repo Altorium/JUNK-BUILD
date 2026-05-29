@@ -1081,61 +1081,216 @@ h3 {
 }
 
 /* =====================
+   優勝者モーダル
+   ===================== */
+.winner-modal-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 40px var(--accent-glow), 0 0 80px rgba(0,212,255,0.12);
+  padding: 48px 56px;
+  max-width: 480px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.winner-congratulations {
+  font-size: 1rem;
+  color: var(--accent2);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px var(--accent2-glow);
+}
+
+.winner-modal-name {
+  font-size: 2.2rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 24px var(--accent);
+}
+
+.winner-modal-score {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+/* =====================
    最終結果画面
    ===================== */
 #screen-result {
-  gap: 24px;
-  max-width: 600px;
+  gap: 16px;
+  max-width: 1100px;
   margin: 0 auto;
   width: 100%;
+  align-items: stretch;
+}
+
+#screen-result h2 {
+  text-align: center;
+}
+
+#result-build-header {
+  display: flex;
+  gap: 16px;
+  padding: 0 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.result-rank-spacer {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.result-build-col-headers {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.result-build-col-headers span {
+  display: block;
+  width: 88px;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-align: center;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 #result-ranking {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
-.rank-row {
+.result-player-row {
   display: flex;
-  align-items: center;
   gap: 16px;
-  padding: 10px 16px;
+  padding: 12px;
   border: 1px solid var(--border);
   background: var(--bg-secondary);
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-.rank-row.rank-1 {
+.result-player-row.rank-1-row {
   border-color: var(--accent);
   background: var(--accent-glow);
+}
+
+.result-rank-info {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .rank-num {
   font-size: 1.2rem;
   color: var(--accent);
-  min-width: 32px;
 }
 
 .rank-name {
-  flex: 1;
+  font-size: 1rem;
+  color: var(--text-primary);
 }
 
 .rank-score {
+  font-size: 0.9rem;
   color: var(--accent);
-  font-size: 1rem;
 }
 
-#result-winner {
-  font-size: 1.1rem;
-  text-align: center;
-  padding: 16px;
-  border: 1px solid var(--border-accent);
+.result-build-cards {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
 }
 
-#winner-name {
+.result-build-cell {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.result-mini-card {
+  width: 88px;
+  min-height: 122px;
+  background: var(--bg-card);
+  background-image: linear-gradient(160deg, rgba(0,212,255,0.07) 0%, transparent 55%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rmc-type {
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 2px 5px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  align-self: flex-start;
+}
+
+.rmc-name {
+  font-size: 0.68rem;
+  color: var(--text-primary);
+  line-height: 1.3;
+  word-break: break-all;
+  flex: 1;
+}
+
+.rmc-rel {
+  font-size: 0.58rem;
+  padding: 1px 4px;
+  border: 1px solid;
+  align-self: flex-start;
+  text-transform: uppercase;
+}
+
+.rmc-score {
+  font-size: 0.65rem;
   color: var(--accent);
-  font-size: 1.4rem;
+}
+
+.boot-success {
+  font-size: 0.72rem;
+  color: #00e676;
+  letter-spacing: 0.06em;
+}
+
+.boot-failure {
+  font-size: 0.72rem;
+  color: #ff5252;
+  letter-spacing: 0.06em;
+}
+
+.result-no-card {
+  width: 88px;
+  min-height: 122px;
+  border: 1px dashed var(--border-accent);
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 /* =====================

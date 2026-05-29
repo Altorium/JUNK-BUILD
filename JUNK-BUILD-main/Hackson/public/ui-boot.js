@@ -1,8 +1,9 @@
 // ui-boot.js
 import {
-  players, deck, currentBuild, getMyIndex,
+  players, deck, currentBuild, getMyIndex, myUid,
   showScreen, createCardEl, getCardType, typeToSlotKey
 } from './ui-draft.js'
+import { submitScore, watchScores } from './sync.js'
 
 const HUMAN_INDEX = 0
 
@@ -17,12 +18,17 @@ let allFinalScores  = []
 // 諦めスキップ共通処理
 // =====================
 function skipToResult(player) {
+  player.bootSuccess = false
   let assetValue = 0
   player.hand.forEach(c => { assetValue += (c.cost || 0) })
   player.score = assetValue * 5
 
-  calcCpuScores()
-  showFinalResult()
+  if (myUid !== null) {
+    submitScore(myUid, player.score).then(() => waitForAllScores())
+  } else {
+    calcCpuScores()
+    showFinalResult()
+  }
 }
 
 // =====================
@@ -32,11 +38,12 @@ function calcCpuScores() {
   players.forEach((p, i) => {
     if (i === HUMAN_INDEX) return
     const assetValue = p.hand.reduce((sum, c) => sum + (c.cost || 0), 0)
-    if (!p.build) { p.score = assetValue * 5; return }
+    if (!p.build) { p.score = assetValue * 5; p.bootSuccess = false; return }
     const { cpu, gpu, memory, motherboard, psu } = p.build
-    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; return }
-    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; return }
-    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; return }
+    if (!cpu || !gpu || !memory || !motherboard || !psu) { p.score = assetValue * 5; p.bootSuccess = false; return }
+    if (!checkCompatibility(p.build)) { p.score = assetValue * 5; p.bootSuccess = false; return }
+    if (!reliabilityCheck(p.build))   { p.score = assetValue * 5; p.bootSuccess = false; return }
+    p.bootSuccess = true
 
     let s = benchmark(p.build)
     s = synergyBonus(s, p.build)
@@ -329,6 +336,7 @@ function showBenchmarkScreen(player, penaltyApplied) {
 // 得点変動画面
 // =====================
 function showBonusScreen(player, baseScore) {
+  player.bootSuccess = true
   showScreen('screen-bonus')
   document.getElementById('bonus-player-name').textContent = player.name
 
@@ -363,10 +371,13 @@ function showBonusScreen(player, baseScore) {
 
   document.getElementById('val-final-score').textContent = finalScore.toLocaleString()
 
-  calcCpuScores()
-
   document.getElementById('btn-next-player').onclick = () => {
-    showFinalResult()
+    if (myUid !== null) {
+      submitScore(myUid, finalScore).then(() => waitForAllScores())
+    } else {
+      calcCpuScores()
+      showFinalResult()
+    }
   }
 }
 
@@ -378,28 +389,135 @@ function addBonusRow(container, label, value) {
 }
 
 // =====================
+// オンライン：全員のスコアが揃うまで待機してから結果表示
+// =====================
+function waitForAllScores() {
+  showScreen('screen-result')
+  document.getElementById('result-ranking').innerHTML =
+    '<p style="color:var(--text-secondary);text-align:center;padding:24px;">他のプレイヤーの結果を待っています...</p>'
+  document.getElementById('btn-restart').classList.add('hidden')
+
+  watchScores(players.map(p => p.id), (_, scores) => {
+    players.forEach(p => {
+      if (scores[p.id] !== undefined) p.score = scores[p.id]
+    })
+    document.getElementById('btn-restart').classList.remove('hidden')
+    showFinalResult()
+  })
+}
+
+// =====================
 // 最終結果画面
 // =====================
 function showFinalResult() {
-  showScreen('screen-result')
-
   const ranking = [...players].sort((a, b) => b.score - a.score)
+  showScreen('screen-result')
+  renderFullResult(ranking)
 
+  document.getElementById('winner-modal-name').textContent = ranking[0].name
+  document.getElementById('winner-modal-score').textContent =
+    `${Math.floor(ranking[0].score).toLocaleString()} pt`
+  document.getElementById('winner-modal').classList.remove('hidden')
+
+  document.getElementById('btn-winner-close').onclick = () => {
+    document.getElementById('winner-modal').classList.add('hidden')
+  }
+}
+
+function createResultMiniCard(card) {
+  const typeKey = getCardType(card)
+  const typeClassMap = { CPU: 'cpu', GPU: 'gpu', MEM: 'mem', MB: 'mb', PSU: 'psu', SUP: 'sup' }
+  const relLabels = { new: 'NEW', used: 'USED', junk: 'JUNK' }
+
+  const el = document.createElement('div')
+  el.className = 'result-mini-card'
+
+  const typeEl = document.createElement('div')
+  typeEl.className = `rmc-type card-type-${typeClassMap[typeKey] ?? 'sup'}`
+  typeEl.textContent = typeKey
+  el.appendChild(typeEl)
+
+  const nameEl = document.createElement('div')
+  nameEl.className = 'rmc-name'
+  nameEl.textContent = card.name
+  el.appendChild(nameEl)
+
+  if (card.reliability) {
+    const relEl = document.createElement('div')
+    relEl.className = `rmc-rel card-reliability ${card.reliability}`
+    relEl.textContent = relLabels[card.reliability]
+    el.appendChild(relEl)
+  }
+
+  if (card.score !== undefined) {
+    const scoreEl = document.createElement('div')
+    scoreEl.className = 'rmc-score'
+    scoreEl.textContent = card.score.toLocaleString()
+    el.appendChild(scoreEl)
+  }
+
+  return el
+}
+
+function renderFullResult(ranking) {
   const rankingEl = document.getElementById('result-ranking')
   rankingEl.innerHTML = ''
 
   ranking.forEach((p, i) => {
-    const div = document.createElement('div')
-    div.className = `rank-row${i === 0 ? ' rank-1' : ''}`
-    div.innerHTML = `
+    const row = document.createElement('div')
+    row.className = `result-player-row${i === 0 ? ' rank-1-row' : ''}`
+
+    // 左：順位・スコア・名前
+    const info = document.createElement('div')
+    info.className = 'result-rank-info'
+    const bootLabel = p.bootSuccess === true
+      ? '<span class="boot-success">起動成功</span>'
+      : p.bootSuccess === false
+        ? '<span class="boot-failure">起動失敗</span>'
+        : ''
+    info.innerHTML = `
       <span class="rank-num">#${i + 1}</span>
-      <span class="rank-name">${p.name}</span>
       <span class="rank-score">${Math.floor(p.score).toLocaleString()} pt</span>
+      <span class="rank-name">${p.name}</span>
+      ${bootLabel}
     `
-    rankingEl.appendChild(div)
+    row.appendChild(info)
+
+    // 右：構成カード
+    const cardsEl = document.createElement('div')
+    cardsEl.className = 'result-build-cards'
+    const build = p.build || {}
+
+    ;[build.cpu, build.gpu, build.memory, build.motherboard, build.psu].forEach(card => {
+      const cell = document.createElement('div')
+      cell.className = 'result-build-cell'
+      cell.appendChild(card ? createResultMiniCard(card) : createEmptyCell())
+      cardsEl.appendChild(cell)
+    })
+
+    // ボーナス（SUPカード）
+    const bonusCell = document.createElement('div')
+    bonusCell.className = 'result-build-cell'
+    const supCards = (p.hand || []).filter(c => getCardType(c) === 'SUP')
+    if (supCards.length > 0) {
+      supCards.forEach(c => bonusCell.appendChild(createResultMiniCard(c)))
+    } else {
+      bonusCell.appendChild(createEmptyCell())
+    }
+    cardsEl.appendChild(bonusCell)
+
+    row.appendChild(cardsEl)
+    rankingEl.appendChild(row)
   })
 
-  document.getElementById('winner-name').textContent = ranking[0].name
+  document.getElementById('btn-restart').classList.remove('hidden')
+}
+
+function createEmptyCell() {
+  const el = document.createElement('div')
+  el.className = 'result-no-card'
+  el.textContent = '—'
+  return el
 }
 
 // =====================
