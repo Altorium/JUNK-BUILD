@@ -838,8 +838,17 @@ function renderField(currentPlayer, isHuman) {
     const affordable = card.cost <= currentPlayer.budget
 
     if (fieldCardElements.has(key)) {
-      // 既存要素：フェードイン中でなければ選択可否を更新
+      // 既存要素：信頼度バッジを最新状態に同期し、選択可否を更新
       const el = fieldCardElements.get(key)
+      const oldRel = el.querySelector('.card-reliability')
+      if (oldRel) oldRel.remove()
+      if (card.reliability) {
+        const labels = { new: 'NEW', used: 'USED', junk: 'JUNK' }
+        const relEl = document.createElement('div')
+        relEl.className = `card-reliability ${card.reliability}`
+        relEl.textContent = labels[card.reliability]
+        el.querySelector('.card-stats')?.appendChild(relEl)
+      }
       if (!el.classList.contains('card-appear')) {
         if (isHuman && affordable) {
           el.onclick = () => onFieldCardClick(card, el)

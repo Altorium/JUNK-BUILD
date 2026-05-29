@@ -49,7 +49,7 @@ async function createRoom() {
 
     document.getElementById("display-room-id").textContent = currentRoomId; //生成したルームIDを表示
     document.getElementById("lobby-waiting").classList.remove("hidden");  // 隠す状態をリムーブして待機状態を表示する
-    document.getElementById("lobby-actions").classList.add("hidden");  //隠す状態を付与してロビーアクション、ルーム作成や参加するボタンを隠す
+    document.getElementById("lobby-card").classList.add("hidden");  //隠す状態を付与してロビーアクション、ルーム作成や参加するボタンを隠す
 
     watchRoom();
 }
@@ -96,7 +96,7 @@ async function joinRoom() {
     }
 
     document.getElementById("lobby-waiting").classList.remove("hidden");
-    document.getElementById("lobby-actions").classList.add("hidden");
+    document.getElementById("lobby-card").classList.add("hidden");
 
     watchRoom();
 }
