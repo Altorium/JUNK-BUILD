@@ -191,35 +191,24 @@ function createField(deck) {
   return field
 }
 
-function refillField() {
-
-  const mainParts = [
-    "cpu",
-    "gpu",
-    "motherboard",
-    "memory",
-    "psu"
-  ]
+function refillField(fieldArr = gameState.field, deckArr = gameState.deck) {
+  const mainParts = ["cpu", "gpu", "motherboard", "memory", "psu"]
 
   mainParts.forEach(type => {
-
-    const exists = gameState.field.some(c => c.type === type)
-
-    if (!exists && gameState.deck.length > 0) {
-
-      const idx = gameState.deck.findIndex(c => c.type === type)
-
+    if (fieldArr.length >= 10) return
+    if (!fieldArr.some(c => c.type === type) && deckArr.length > 0) {
+      const idx = deckArr.findIndex(c => c.type === type)
       if (idx !== -1) {
-        gameState.field.push(gameState.deck.splice(idx, 1)[0])
+        fieldArr.push(deckArr.splice(idx, 1)[0])
+      } else {
+        fieldArr.push(deckArr.shift())
       }
-      else {
-        gameState.field.push(gameState.deck.shift())
-      }
-
     }
-
   })
 
+  while (fieldArr.length < 10 && deckArr.length > 0) {
+    fieldArr.push(deckArr.shift())
+  }
 }
 
 // =====================
@@ -303,9 +292,6 @@ function initGame() {
   applyEvent(event, deck)
 
   const field = createField(deck)
-
-  gameState.field = field
-  refillField()
 
   gameState.players = players
   gameState.deck = deck

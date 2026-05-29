@@ -1006,7 +1006,7 @@ document.getElementById('btn-pick-card').addEventListener('click', async () => {
     players[myIdx].hand.push(cardToPick)
     players[myIdx].budget -= cardToPick.cost
     field.splice(fieldIndex, 1)
-    if (deck.length > 0) field.push(deck.shift())
+    refillField(field, deck)
     const newTurn = (onlineTurn + 1) % players.length
     const newRound = newTurn === 0 ? onlineDraftRound + 1 : onlineDraftRound
     const pickWrite = { players, field: [...field], deck: [...deck], turn: newTurn, draftRound: newRound }
@@ -1098,9 +1098,7 @@ function pickCardLocal(playerIndex, card) {
   player.budget -= card.cost
 
   field.splice(field.indexOf(card), 1)
-  if (deck.length > 0) {
-    field.push(deck.shift())
-  }
+  refillField(field, deck)
 }
 
 // =====================
