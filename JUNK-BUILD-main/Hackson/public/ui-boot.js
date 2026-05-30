@@ -3,7 +3,7 @@ import {
   players, deck, currentBuild, getMyIndex, myUid,
   showScreen, createCardEl, getCardType, typeToSlotKey
 } from './ui-draft.js'
-import { submitScore, watchScores } from './sync.js'
+import { submitScore, submitBuild, watchScores } from './sync.js'
 
 const HUMAN_INDEX = 0
 
@@ -24,7 +24,9 @@ function skipToResult(player) {
   player.score = assetValue * 5
 
   if (myUid !== null) {
-    submitScore(myUid, player.score).then(() => waitForAllScores())
+    submitBuild(myUid, player.build || null, false)
+      .then(() => submitScore(myUid, player.score))
+      .then(() => waitForAllScores())
   } else {
     calcCpuScores()
     showFinalResult()
@@ -373,7 +375,9 @@ function showBonusScreen(player, baseScore) {
 
   document.getElementById('btn-next-player').onclick = () => {
     if (myUid !== null) {
-      submitScore(myUid, finalScore).then(() => waitForAllScores())
+      submitBuild(myUid, player.build, true)
+        .then(() => submitScore(myUid, finalScore))
+        .then(() => waitForAllScores())
     } else {
       calcCpuScores()
       showFinalResult()
@@ -397,9 +401,11 @@ function waitForAllScores() {
     '<p style="color:var(--text-secondary);text-align:center;padding:24px;">他のプレイヤーの結果を待っています...</p>'
   document.getElementById('btn-restart').classList.add('hidden')
 
-  watchScores(players.map(p => p.id), (_, scores) => {
+  watchScores(players.map(p => p.id), (_, scores, builds, bootResults) => {
     players.forEach(p => {
       if (scores[p.id] !== undefined) p.score = scores[p.id]
+      if (builds && builds[p.id] !== undefined) p.build = builds[p.id]
+      if (bootResults && bootResults[p.id] !== undefined) p.bootSuccess = bootResults[p.id]
     })
     document.getElementById('btn-restart').classList.remove('hidden')
     showFinalResult()
@@ -414,9 +420,19 @@ function showFinalResult() {
   showScreen('screen-result')
   renderFullResult(ranking)
 
-  document.getElementById('winner-modal-name').textContent = ranking[0].name
+  const myPlayer = players[getMyIndex()]
+  const myRankIndex = ranking.indexOf(myPlayer)
+  const displayPlayer = myRankIndex !== -1 ? myPlayer : ranking[0]
+  const displayRank = myRankIndex !== -1 ? myRankIndex : 0
+
+  const congratsEl = document.querySelector('.winner-congratulations')
+  if (congratsEl) {
+    congratsEl.textContent = displayRank === 0 ? '優勝おめでとう！' : `第${displayRank + 1}位`
+  }
+
+  document.getElementById('winner-modal-name').textContent = displayPlayer.name
   document.getElementById('winner-modal-score').textContent =
-    `${Math.floor(ranking[0].score).toLocaleString()} pt`
+    `${Math.floor(displayPlayer.score).toLocaleString()} pt`
   document.getElementById('winner-modal').classList.remove('hidden')
 
   document.getElementById('btn-winner-close').onclick = () => {

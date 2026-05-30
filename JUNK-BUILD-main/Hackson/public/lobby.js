@@ -36,7 +36,7 @@ async function createRoom() {
         players: [{
             id: myUid,
             name: name,
-            budget: 130,
+            budget: 150,
             hand: [],
             build: {},
             score: 0,
@@ -83,7 +83,7 @@ async function joinRoom() {
         const newPlayer = {
             id: myUid,
             name: name,
-            budget: 130,
+            budget: 150,
             hand: [],
             build: {},
             score: 0,
@@ -150,7 +150,7 @@ async function startGame(room) {
         const players = room.players.map(p => ({
             id: p.id,
             name: p.name,
-            budget: 130,
+            budget: 150,
             hand: [],
             build: {},
             score: 0,
