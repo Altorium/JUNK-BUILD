@@ -36,9 +36,11 @@ export async function skipTurn() {
     await updateDoc(roomRef, { turn: newTurn, draftRound: newRound });
 }
 
-export async function submitBuild(uid, build) {
+export async function submitBuild(uid, build, bootSuccess) {
     const roomRef = doc(db, "rooms", currentRoomId);
-    await updateDoc(roomRef, { [`builds.${uid}`]: build });
+    const update = { [`builds.${uid}`]: build };
+    if (bootSuccess !== undefined) update[`bootResults.${uid}`] = bootSuccess;
+    await updateDoc(roomRef, update);
 }
 
 export async function submitScore(uid, score) {
@@ -51,9 +53,11 @@ export function watchScores(playerUids, onAllDone) {
     const unsub = onSnapshot(roomRef, (snap) => {
         const room = snap.data();
         const scores = room.scores || {};
+        const builds = room.builds || {};
+        const bootResults = room.bootResults || {};
         if (playerUids.every(uid => scores[uid] !== undefined)) {
             unsub();
-            onAllDone(room.players, scores);
+            onAllDone(room.players, scores, builds, bootResults);
         }
     });
 }

@@ -280,10 +280,10 @@ function checkGameEnd() {
  */
 function initGame() {
   const players = [
-    new Player("P1", 130),
-    new Player("P2", 130),
-    new Player("P3", 130),
-    new Player("P4", 130)
+    new Player("P1", 150),
+    new Player("P2", 150),
+    new Player("P3", 150),
+    new Player("P4", 150)
   ]
 
   const deck = createDeck()
